@@ -13,6 +13,8 @@
         "event-emitter": "github:danrossi/event-emitter",
         "pip-manager": "github:danrossi/pip-manager",
         "rollup": "^2.38.0",
-        "rollup-plugin-styles": "^4.0.0"
+        "rollup-plugin-includepaths": "^0.2.4",
+        "rollup-plugin-styles": "^4.0.0",
+        "screenlock-api": "github:danrossi/screenlock-api"
     }
 }

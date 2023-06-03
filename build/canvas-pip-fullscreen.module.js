@@ -386,6 +386,41 @@ class EventEmitter {
 }
 
 /**
+ * Picture In Picture API Support util
+ * @author Electroteque Media Daniel Rossi <danielr@electroteque.org>
+ * Copyright (c) 2023 Electroteque Media
+ */
+
+let _chromeSupport = false,
+_webkitSupport = false;
+
+class PictureInPictureUtil {
+
+	/**
+	 * Call supported to set different api support
+	 */
+	static get supported() {
+		_chromeSupport = 'pictureInPictureEnabled' in document;
+		_webkitSupport = 'webkitSupportsPresentationMode' in HTMLVideoElement.prototype;
+		return _chromeSupport || _webkitSupport;
+	}
+
+	/**
+	 * webkit support
+	 */
+	static get webkitSupport() {
+		return _webkitSupport;
+	}
+
+	/**
+	 * chrome support
+	 */
+	static get chromeSupport() {
+		return _chromeSupport;
+	} 
+}
+
+/**
  * Picture In Picture API Manager
  * @author Electroteque Media Daniel Rossi <danielr@electroteque.org>
  * Copyright (c) 2023 Electroteque Media
@@ -431,7 +466,9 @@ class PictureInPictureManager extends EventEmitter {
 	 */
 	init() {
 
-		{
+		if (PictureInPictureUtil.webkitSupport) {
+			this.initWebkitEvents();
+		} else {
 			this.initChromeEvents();
 		}
 	}
@@ -525,7 +562,9 @@ class PictureInPictureManager extends EventEmitter {
 	 * Toggle picture in picture for both apis
 	 */
 	togglePictureInPicture() {
-		{
+		if (PictureInPictureUtil.webkitSupport) {
+    		this.toggleWebkitPip();
+	    } else {
 	    	this.toggleChromePip();
 	    }
 	}
@@ -607,6 +646,7 @@ class CanvasPictureInPicture extends EventEmitter$1 {
      * Request VR picture in picture
      */
      requestVRPip() {
+        console.log("Request vr pip");
         this.pipVRVideo.addEventListener("loadedmetadata", this.onPipMetadata);
         //render video from the canvas stream
         this.pipVRVideo.srcObject = this.renderingCanvas.captureStream(30);
@@ -646,6 +686,8 @@ class CanvasFullscreen extends EventEmitter$1 {
         
         const video = this._video = document.createElement("video");
 
+        this.canvas = canvas;
+
         video.setAttribute("autoplay", true);
         video.setAttribute("webkit-playsinline","");
         video.setAttribute("playsinline","");
@@ -660,13 +702,14 @@ class CanvasFullscreen extends EventEmitter$1 {
         });
 
         video.addEventListener("play", () => {
-            if (isPaused) {
+            if (this.isPaused) {
                 this.emit("playing");
                 this.isPaused = false;
             }
         });
 
         video.addEventListener('webkitbeginfullscreen', () => {
+            this._video.style.display = "block";
             this.emit('webkitbeginfullscreen');
         });
 
@@ -680,6 +723,7 @@ class CanvasFullscreen extends EventEmitter$1 {
         });
 
         video.addEventListener("loadedmetadata", () => {
+           // console.log("metadatata");
            //enter fullscreen on metadata
             video.webkitEnterFullScreen();
         });
@@ -690,8 +734,10 @@ class CanvasFullscreen extends EventEmitter$1 {
      * Use requestFullscreen otherwise for html container.
      */
     requestFullscreen() {
-        this._video.style.display = "block";
+        
         this._video.srcObject = this.canvas.captureStream(30);
+
+        //console.log("request", this._video.srcObject);
         this._video.play().catch(() => {});
     }
 
@@ -720,7 +766,8 @@ class CanvasPipFullscreen extends EventEmitter$1 {
 
     constructor(canvas, video) {
         super();
-        this.init(canvas, video);
+        this.canvas = canvas;
+        this.video = video;
     }
 
     /**
@@ -728,8 +775,8 @@ class CanvasPipFullscreen extends EventEmitter$1 {
      * @param {*} canvas 
      * @param {*} video 
      */
-    init(canvas, video) {
-        this.canvasPip = new CanvasPictureInPicture(canvas, video);
+    initPip() {
+        this.canvasPip = new CanvasPictureInPicture(this.canvas, this.video);
 
         const eventCallback = (e, ...args) => {
             this.emit(e.type, args);
@@ -739,8 +786,14 @@ class CanvasPipFullscreen extends EventEmitter$1 {
         .on("leavepictureinpicture", eventCallback)
         .on("failed", eventCallback)
         .on("disabled", eventCallback);
+    }
 
-        this.canvasFullScreen = new CanvasFullscreen(canvas);
+    initFullscreen() {
+        const eventCallback = (e, ...args) => {
+            this.emit(e.type, args);
+        };
+
+        this.canvasFullScreen = new CanvasFullscreen(this.canvas);
         this.canvasFullScreen.on('webkitbeginfullscreen', eventCallback)
         .on('webkitendfullscreen', eventCallback);
     }
@@ -782,4 +835,65 @@ class CanvasPipFullscreen extends EventEmitter$1 {
     }
 }
 
-export { CanvasPipFullscreen };
+/**
+ * @license
+ * screenlock-polyfill
+ * @author danrossi / https://github.com/danrossi
+ * Copyright (c) 2017 Google
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/**
+ * IOSUtils
+ * IOS utils methods for IOS detection and requesting orientation permissions. 
+ * @author danrossi / https://github.com/danrossi
+ */
+
+class IOSUtils {
+
+    static get isIOS() {
+        return ((/iP(hone|ad)/i).test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+    }
+
+    static requireOrientationPermission() {
+        return window.DeviceOrientationEvent !== undefined && typeof window.DeviceOrientationEvent.requestPermission === 'function';
+    }
+
+    static requestOrientationPermissions() {
+        return window.DeviceOrientationEvent.requestPermission();
+    }
+}
+
+class CanvasPipFullscreenUtil {
+
+    static get fullScreenAvailable() {
+        return document.fullscreenEnabled ||
+            document.mozFullscreenEnabled ||
+            document.webkitFullscreenEnabled ||
+            document.msFullscreenEnabled;
+    }
+
+    static get isIOS() {
+        return IOSUtils.isIOS;
+    }
+
+    static get IOSFullscreenAvailable() {
+        return IOSUtils.isIOS && this.fullScreenAvailable;
+    }
+
+    static get pipSupported() {
+        return PictureInPictureUtil.supported;
+    }
+}
+
+export { CanvasPipFullscreen, CanvasPipFullscreenUtil };

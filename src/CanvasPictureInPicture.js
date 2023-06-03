@@ -76,6 +76,7 @@ export default class CanvasPictureInPicture extends EventEmitter {
      * Request VR picture in picture
      */
      requestVRPip() {
+        console.log("Request vr pip");
         this.pipVRVideo.addEventListener("loadedmetadata", this.onPipMetadata);
         //render video from the canvas stream
         this.pipVRVideo.srcObject = this.renderingCanvas.captureStream(30);

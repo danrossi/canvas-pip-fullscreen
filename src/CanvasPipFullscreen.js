@@ -13,7 +13,8 @@ export default class CanvasPipFullscreen extends EventEmitter {
 
     constructor(canvas, video) {
         super();
-        this.init(canvas, video);
+        this.canvas = canvas;
+        this.video = video;
     }
 
     /**
@@ -21,8 +22,8 @@ export default class CanvasPipFullscreen extends EventEmitter {
      * @param {*} canvas 
      * @param {*} video 
      */
-    init(canvas, video) {
-        this.canvasPip = new CanvasPictureInPicture(canvas, video);
+    initPip() {
+        this.canvasPip = new CanvasPictureInPicture(this.canvas, this.video);
 
         const eventCallback = (e, ...args) => {
             this.emit(e.type, args);
@@ -32,8 +33,14 @@ export default class CanvasPipFullscreen extends EventEmitter {
         .on("leavepictureinpicture", eventCallback)
         .on("failed", eventCallback)
         .on("disabled", eventCallback);
+    }
 
-        this.canvasFullScreen = new CanvasFullscreen(canvas);
+    initFullscreen() {
+        const eventCallback = (e, ...args) => {
+            this.emit(e.type, args);
+        };
+
+        this.canvasFullScreen = new CanvasFullscreen(this.canvas);
         this.canvasFullScreen.on('webkitbeginfullscreen', eventCallback)
         .on('webkitendfullscreen', eventCallback);
     }

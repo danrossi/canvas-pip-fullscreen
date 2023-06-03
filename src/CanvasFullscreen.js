@@ -21,6 +21,8 @@ export default class CanvasFullscreen extends EventEmitter {
         
         const video = this._video = document.createElement("video");
 
+        this.canvas = canvas;
+
         video.setAttribute("autoplay", true);
         video.setAttribute("webkit-playsinline","");
         video.setAttribute("playsinline","");
@@ -35,13 +37,14 @@ export default class CanvasFullscreen extends EventEmitter {
         });
 
         video.addEventListener("play", () => {
-            if (isPaused) {
+            if (this.isPaused) {
                 this.emit("playing");
                 this.isPaused = false;
             }
         });
 
         video.addEventListener('webkitbeginfullscreen', () => {
+            this._video.style.display = "block";
             this.emit('webkitbeginfullscreen');
         });
 
@@ -55,6 +58,7 @@ export default class CanvasFullscreen extends EventEmitter {
         });
 
         video.addEventListener("loadedmetadata", () => {
+           // console.log("metadatata");
            //enter fullscreen on metadata
             video.webkitEnterFullScreen();
         });
@@ -65,8 +69,10 @@ export default class CanvasFullscreen extends EventEmitter {
      * Use requestFullscreen otherwise for html container.
      */
     requestFullscreen() {
-        this._video.style.display = "block";
+        
         this._video.srcObject = this.canvas.captureStream(30);
+
+        //console.log("request", this._video.srcObject);
         this._video.play().catch(() => {});
     }
 

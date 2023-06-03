@@ -1,5 +1,6 @@
 import terser from '@rollup/plugin-terser';
 import resolve from '@rollup/plugin-node-resolve';
+import includePaths from 'rollup-plugin-includepaths';
 
 const banner = `
 /**
@@ -25,6 +26,11 @@ export default [
 		input: './index.js',
 		plugins: [
 			resolve(),
+			includePaths({
+				include: {
+				  'iosutils': './node_modules/screenlock-api/build/iosutils.module.js'
+				}
+		  	}),
 			terser()
 		],
 		output: [
@@ -39,7 +45,12 @@ export default [
 	{
 		input: './index.js',
 		plugins: [
-			resolve()
+			resolve(),
+			includePaths({
+				include: {
+				  'iosutils': './node_modules/screenlock-api/build/iosutils.module.js'
+				}
+		  	})
 		],
 		output: [
 			{
