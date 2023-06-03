@@ -89,7 +89,7 @@
 
             
 
-            /*if (fullScreenAvailable) {
+            if (fullScreenAvailable) {
                 fsButton.addEventListener("click", () => {
                     //html fullscreen
                     FullscreenApi.requestFullscreen(container);
@@ -125,24 +125,11 @@
                     //canvas video capture fullscreen
                     canvasPipFullscreen.requestFullscreen(container);
                 });
-            }*/
 
-            canvasPipFullscreen.initFullscreen();
-
-canvasPipFullscreen.on('webkitbeginfullscreen', () => {
-    console.log("canvas video fullscreen");
-    ScreenLockApi.lock("landscape").then(() => {}).catch(() => {});
-}).on('webkitendfullscreen', () => {
-    console.log("canvas video exit fullscreen");
-    ScreenLockApi.unlock();
-});
-
-fsButton.addEventListener("click", () => {
-    //canvas video capture fullscreen
-    canvasPipFullscreen.requestFullscreen(container);
-});
-
-container.insertBefore(canvasPipFullscreen.canvasVideo, container.firstChild);
+                container.insertBefore(canvasPipFullscreen.canvasVideo, container.firstChild);
+            }
+            
+            
 
         </script>
     
