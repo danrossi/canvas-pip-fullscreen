@@ -51,7 +51,8 @@
 				<source src="https://videos.electroteque.org/bitrate/big_buck_bunny_2000k.mp4">
 			</video>
             <canvas id="renderer" style="background: #000000; width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
-		</div>
+            <div id="buttons"></div>
+        </div>
         
 		<script type="importmap">
 			{
@@ -81,7 +82,8 @@
 
             const video = document.getElementById( 'video' ),
             canvas = document.getElementById( 'renderer' ),
-            container = document.getElementById( 'container' );
+            container = document.getElementById( 'container' ),
+            buttons = document.getElementById( 'buttons' );
 
             if (!ScreenLockApi.supportsScreenLock) ScreenLockApi.lockElement(container);
 
@@ -115,6 +117,7 @@
             
 
             if (CanvasPipFullscreenUtil.pipSupported) {
+                console.log("pip supported");
                 canvasPipFullscreen.initPip();
 
                 const pipButton = document.createElement("button");
@@ -137,14 +140,14 @@
                     canvasPipFullscreen.togglePictureInPicture(true);
                 });
 
-                document.body.appendChild(pipButton);
+                buttons.appendChild(pipButton);
 
             }
 
             const fsButton = document.createElement("button");
             fsButton.innerText = "Enter Fullscreen";
 
-            container.appendChild(fsButton);
+            buttons.appendChild(fsButton);
 
             
 
@@ -197,10 +200,12 @@
                 console.log("canvas video exit fullscreen");
                 ScreenLockApi.unlock();
             }).on("fsplay", () => {
-                video.play()
+               // video.play()
 
                 console.log("PLAY");
-            }).on("fspause", () => video.pause());
+            }).on("fspause", () => {}); 
+            
+            //video.pause());
 
             fsButton.addEventListener("click", () => {
                 //canvas video capture fullscreen
@@ -210,6 +215,20 @@
             canvasPipFullscreen.canvasVideo.classList.add("vr-fs");
 
             container.insertBefore(canvasPipFullscreen.canvasVideo, container.firstChild);
+
+           
+               /* container.addEventListener("click", function onClick(e) {
+                    try {
+                    canvasPipFullscreen.canvasVideo.play().catch((e) => { console.log(e)});
+                    canvasPipFullscreen.canvasVideo.pause();
+                    canvasPipFullscreen.canvasVideo.webkitEnterFullScreen();
+
+                    container.removeEventListener("click", onClick);
+                    } catch (e) {
+                        console.log(e);
+                    }
+                });*/
+
 
 
             function initCanvas() {
@@ -271,10 +290,11 @@
                     gl.uniform1f(texHeightLoc, video.videoHeight);
                 };
 
-
                 video.addEventListener("resize", onResize);
-
+                
                 onResize();
+
+                //animation.start();
             }
 
             async function render(now, metadata) {

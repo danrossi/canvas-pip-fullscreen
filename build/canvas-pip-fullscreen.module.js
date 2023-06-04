@@ -578,10 +578,10 @@ class PictureInPictureManager extends EventEmitter {
 
 class CanvasPictureInPicture extends EventEmitter$1 {
 
-    constructor(canvas, video) {
+    constructor(canvas, renderVideo, video) {
         super();
 
-        this.init(canvas, video);
+        this.init(canvas, renderVideo, video);
     }
 
     set video(video) {
@@ -593,10 +593,11 @@ class CanvasPictureInPicture extends EventEmitter$1 {
      * @param {*} canvas 
      * @param {*} video 
      */
-    init(canvas, video) {
+    init(canvas, renderVideo, video) {
         this.renderingCanvas = canvas;
 
-        const pipVRVideo = this.pipVRVideo = document.createElement("video"),
+        //const pipVRVideo = this.pipVRVideo = document.createElement("video"),
+        const pipVRVideo = this.pipVRVideo = renderVideo,
         vrPipManager = new PictureInPictureManager(pipVRVideo);
         pipVRVideo.setAttribute("autoplay", true);
         pipVRVideo.setAttribute("webkit-playsinline","");
@@ -673,25 +674,24 @@ class CanvasPictureInPicture extends EventEmitter$1 {
 
 class CanvasFullscreen extends EventEmitter$1 {
 
-    constructor(canvas) {
+    constructor(canvas, renderVideo) {
         super();
-        this.init(canvas);
+        this.init(canvas, renderVideo);
     }
 
     /**
      * Init canvas rendering video for fullscreen support
      * @param {*} canvas 
      */
-    init(canvas) {
+    init(canvas, renderVideo) {
         
-        const video = this._video = document.createElement("video");
-
+        //const video = this._video = document.createElement("video");
+        const video = this._video = renderVideo;
         this.canvas = canvas;
 
         video.setAttribute("autoplay", true);
-        video.setAttribute("webkit-playsinline","");
-        video.setAttribute("playsinline","");
-             
+        //video.setAttribute("webkit-playsinline","");
+        //video.setAttribute("playsinline","");     
         //video.setAttribute("muted", true);
 
         video.style.display = "none";
@@ -740,8 +740,10 @@ class CanvasFullscreen extends EventEmitter$1 {
 
         video.addEventListener("loadedmetadata", () => {
             video.style.display = "block";
-           //enter fullscreen on metadata
+            video.play().catch((e) => { console.log(e);});
+            //enter fullscreen on metadata
             video.webkitEnterFullScreen();
+
         });
     }
 
@@ -750,11 +752,10 @@ class CanvasFullscreen extends EventEmitter$1 {
      * Use requestFullscreen otherwise for html container.
      */
     requestFullscreen() {
-        
+        //video.style.display = "block";
         this._video.srcObject = this.canvas.captureStream(30);
 
-        //console.log("request", this._video.srcObject);
-        this._video.play().catch(() => {});
+        //this._video.play().catch((e) => { console.log(e);});
     }
 
     /**
@@ -784,6 +785,8 @@ class CanvasPipFullscreen extends EventEmitter$1 {
         super();
         this.canvas = canvas;
         this.video = video;
+
+        this.renderVideo = document.createElement("video");
     }
 
     /**
@@ -792,7 +795,7 @@ class CanvasPipFullscreen extends EventEmitter$1 {
      * @param {*} video 
      */
     initPip() {
-        this.canvasPip = new CanvasPictureInPicture(this.canvas, this.video);
+        this.canvasPip = new CanvasPictureInPicture(this.canvas, this.renderVideo, this.video);
 
         const eventCallback = (e, ...args) => {
             this.emit(e.type, args);
@@ -809,7 +812,7 @@ class CanvasPipFullscreen extends EventEmitter$1 {
             this.emit(e.type, args);
         };
 
-        this.canvasFullScreen = new CanvasFullscreen(this.canvas);
+        this.canvasFullScreen = new CanvasFullscreen(this.canvas, this.renderVideo);
         this.canvasFullScreen.on('webkitbeginfullscreen', eventCallback)
         .on('webkitendfullscreen', eventCallback)
         .on('fsplay', eventCallback)

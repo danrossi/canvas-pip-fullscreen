@@ -8,10 +8,10 @@ import { PictureInPictureManager } from 'pip-manager';
 
 export default class CanvasPictureInPicture extends EventEmitter {
 
-    constructor(canvas, video) {
+    constructor(canvas, renderVideo, video) {
         super();
 
-        this.init(canvas, video);
+        this.init(canvas, renderVideo, video);
     }
 
     set video(video) {
@@ -23,10 +23,11 @@ export default class CanvasPictureInPicture extends EventEmitter {
      * @param {*} canvas 
      * @param {*} video 
      */
-    init(canvas, video) {
+    init(canvas, renderVideo, video) {
         this.renderingCanvas = canvas;
 
-        const pipVRVideo = this.pipVRVideo = document.createElement("video"),
+        //const pipVRVideo = this.pipVRVideo = document.createElement("video"),
+        const pipVRVideo = this.pipVRVideo = renderVideo,
         vrPipManager = new PictureInPictureManager(pipVRVideo);
         pipVRVideo.setAttribute("autoplay", true);
         pipVRVideo.setAttribute("webkit-playsinline","");
@@ -45,6 +46,7 @@ export default class CanvasPictureInPicture extends EventEmitter {
             eventCallback(e, true);
         }).on("leavepictureinpicture", (e) => {
             eventCallback(e, true);
+            pipVRVideo.style.display = "none";
             //stop the canvas stream tracks
             pipVRVideo.srcObject.getTracks().forEach(track => track.stop());
         }).on("failed", (e, error) => {
@@ -77,6 +79,7 @@ export default class CanvasPictureInPicture extends EventEmitter {
      */
      requestVRPip() {
         console.log("Request vr pip");
+        this.pipVRVideo.style.display = "block";
         this.pipVRVideo.addEventListener("loadedmetadata", this.onPipMetadata);
         //render video from the canvas stream
         this.pipVRVideo.srcObject = this.renderingCanvas.captureStream(30);
