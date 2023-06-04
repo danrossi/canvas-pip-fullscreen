@@ -42,7 +42,9 @@ export default class CanvasPipFullscreen extends EventEmitter {
 
         this.canvasFullScreen = new CanvasFullscreen(this.canvas);
         this.canvasFullScreen.on('webkitbeginfullscreen', eventCallback)
-        .on('webkitendfullscreen', eventCallback);
+        .on('webkitendfullscreen', eventCallback)
+        .on('fsplay', eventCallback)
+        .on('fspause', eventCallback)
     }
 
     /**

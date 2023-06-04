@@ -8,11 +8,49 @@
 		
 	</head>
 	<body>
-		<div id="container" style="max-width: 800px; pointer-events: all;">
-			<video id="video" style="width: 100%;"  loop crossOrigin="anonymous" controls playsinline>
+        <style>
+             .vr-fs {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                display: none;
+             }
+
+            .container {
+                display: inline-block;
+                vertical-align: top;
+                box-sizing: border-box;
+                color: #fff;
+                background-color: #000;
+                position: relative;
+                padding: 0;
+                font-size: 10px;
+                line-height: 1;
+                font-weight: 400;
+                font-style: normal;
+                font-family: Arial,Helvetica,sans-serif;
+                word-break: initial;
+                width: 100%;
+                max-width: 100%;
+                height: 0;
+                padding-top: 50%;
+            }
+
+            .container video {
+                display: none;
+            }
+
+            .container.is-pip canvas {
+                display: none;
+            }
+        </style>
+		<div id="container" class="container" style="max-width: 800px; pointer-events: all;">
+			<video id="video" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;"  loop crossOrigin="anonymous" controls playsinline>
 				<source src="https://videos.electroteque.org/bitrate/big_buck_bunny_2000k.mp4">
 			</video>
-            <canvas id="renderer" style="background: #000000; width: 100%; height: 100%"></canvas>
+            <canvas id="renderer" style="background: #000000; width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
 		</div>
         
 		<script type="importmap">
@@ -28,9 +66,14 @@
 
 		<script type="module">
 
+            let gl, animation, frameTexLoc, texWidthLoc, texHeightLoc, paused = true;
+
+     
+
 			import {
 				CanvasPipFullscreen,
-                CanvasPipFullscreenUtil
+                CanvasPipFullscreenUtil,
+                VideoAnimation
 			} from 'canvas-pip-fullscreen';
 
             import FullscreenApi from 'fullscreen-api';
@@ -42,14 +85,28 @@
 
             if (!ScreenLockApi.supportsScreenLock) ScreenLockApi.lockElement(container);
 
+
+            video.addEventListener("loadedmetadata", initCanvas);
+            video.addEventListener("play", () => animation && animation.start());
+            video.addEventListener("pause", () => animation.stop());
+            video.load();
             
 
-            container.addEventListener("click", function onClick() {
-                video.load();
-                video.play();
+            container.addEventListener("click", (e) => {
+
+                if (e.target !== container) return;
+                if (paused) {
+                    
+                    video.play();
+                    paused = false;
+                } else {
+                    paused = true;
+                    video.pause();
+                }
+                
 
     
-                container.removeEventListener("click", onClick);
+               // container.removeEventListener("click", onClick);
             });
 
             const canvasPipFullscreen = new CanvasPipFullscreen(canvas, video);
@@ -65,8 +122,10 @@
 
                 canvasPipFullscreen.on("enterpictureinpicture", () => {
                     pipButton.innerText = "Exit Pip";
+                    container.classList.add("is-pip");
                 }).on("leavepictureinpicture", () => {
                     pipButton.innerText = "Enter Pip";
+                    container.classList.remove("is-pip");
                 }).on("failed", (e, isCanvas, error) => {
                     console.log("Picture in picture error ", error);
                 }).on("disabled", (e, isCanvas, disabled) => {
@@ -89,7 +148,7 @@
 
             
 
-            if (fullScreenAvailable) {
+          /*  if (fullScreenAvailable) {
                 fsButton.addEventListener("click", () => {
                     //html fullscreen
                     FullscreenApi.requestFullscreen(container);
@@ -123,12 +182,111 @@
 
                 fsButton.addEventListener("click", () => {
                     //canvas video capture fullscreen
-                    canvasPipFullscreen.requestFullscreen(container);
+                    canvasPipFullscreen.requestFullscreen();
                 });
 
                 container.insertBefore(canvasPipFullscreen.canvasVideo, container.firstChild);
-            }
+            }*/
+
+            canvasPipFullscreen.initFullscreen();
+
+            canvasPipFullscreen.on('webkitbeginfullscreen', () => {
+                console.log("canvas video fullscreen");
+                ScreenLockApi.lock("landscape").then(() => {}).catch(() => {});
+            }).on('webkitendfullscreen', () => {
+                console.log("canvas video exit fullscreen");
+                ScreenLockApi.unlock();
+            }).on("fsplay", () => {
+                video.play()
+
+                console.log("PLAY");
+            }).on("fspause", () => video.pause());
+
+            fsButton.addEventListener("click", () => {
+                //canvas video capture fullscreen
+                canvasPipFullscreen.requestFullscreen();
+            });
+
+            canvasPipFullscreen.canvasVideo.classList.add("vr-fs");
+
+            container.insertBefore(canvasPipFullscreen.canvasVideo, container.firstChild);
+
+
+            function initCanvas() {
+                const config = {
+                    premultipliedAlpha: false
+                };
+
+                gl = canvas.getContext('webgl2', config) || canvas.getContext("webgl", config) || canvas.getContext("experimental-webgl", config);
             
+                const vs = gl.createShader(gl.VERTEX_SHADER);
+                gl.shaderSource(vs, 'attribute vec2 c; void main(void) { gl_Position=vec4(c, 0.0, 1.0); }');
+                gl.compileShader(vs);
+                const fs = gl.createShader(gl.FRAGMENT_SHADER);
+                gl.shaderSource(fs,  `
+                precision mediump float;
+
+                uniform sampler2D frame;
+
+                uniform float texWidth;
+                uniform float texHeight;
+
+                void main(void) {
+                    vec2 texCoord = vec2(gl_FragCoord.x/texWidth, 1.0 - (gl_FragCoord.y/texHeight));
+                    gl_FragColor = texture2D(frame, texCoord);
+                }`);
+                gl.compileShader(fs);
+                if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+                    console.error(gl.getShaderInfoLog(fs));
+                }
+                const prog = gl.createProgram();
+                gl.attachShader(prog, vs);
+                gl.attachShader(prog, fs);
+                gl.linkProgram(prog);
+                gl.useProgram(prog);
+                const vb = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, 1, -1, -1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+                const coordLoc = gl.getAttribLocation(prog, 'c');
+                gl.vertexAttribPointer(coordLoc, 2, gl.FLOAT, false, 0, 0);
+                gl.enableVertexAttribArray(coordLoc);
+                gl.activeTexture(gl.TEXTURE0);
+                const frame = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, frame);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+               
+                frameTexLoc = gl.getUniformLocation(prog, "frame");
+                texWidthLoc = gl.getUniformLocation(prog, "texWidth");
+                texHeightLoc = gl.getUniformLocation(prog, "texHeight");
+
+                animation = new VideoAnimation(async(now, metadata) => await render(now, metadata), video);
+
+                const onResize = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    gl.viewport(0, 0, video.videoWidth, video.videoHeight);
+                    gl.uniform1f(texWidthLoc, video.videoWidth);
+                    gl.uniform1f(texHeightLoc, video.videoHeight);
+                };
+
+
+                video.addEventListener("resize", onResize);
+
+                onResize();
+            }
+
+            async function render(now, metadata) {
+
+                gl.viewport(0, 0, metadata.width, metadata.height);
+                gl.activeTexture(gl.TEXTURE0);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
+                gl.uniform1i(frameTexLoc, 0);
+                gl.uniform1f(texWidthLoc, metadata.width);
+                gl.uniform1f(texHeightLoc, metadata.height);
+                gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+            }
             
 
         </script>

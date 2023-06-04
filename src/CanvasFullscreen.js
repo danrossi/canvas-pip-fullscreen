@@ -32,33 +32,49 @@ export default class CanvasFullscreen extends EventEmitter {
         video.style.display = "none";
 
         video.addEventListener("pause", () => {
-            this.emit("paused");
+            this.emit("fspause");
             this.isPaused = true;
         });
 
         video.addEventListener("play", () => {
             if (this.isPaused) {
-                this.emit("playing");
+                this.emit("fsplay");
                 this.isPaused = false;
             }
         });
 
-        video.addEventListener('webkitbeginfullscreen', () => {
-            this._video.style.display = "block";
+        const onEnterFullScreen = () => {
+            video.style.display = "block";
             this.emit('webkitbeginfullscreen');
-        });
+        };
 
-        video.addEventListener('webkitendfullscreen', () => {
+        const onExitFullScreen = () => {
             video.style.display = "none";
 
             //stop canvas stream tracks
             video.srcObject.getTracks().forEach(track => track.stop());
 
             this.emit('webkitendfullscreen');
-        });
+        };
+
+
+        document.addEventListener("webkitfullscreenchange", function (event) {
+            //console.log("on webkitfullscreenchange", video.webkitDisplayingFullscreen);
+
+            if (video.webkitDisplayingFullscreen) {
+                onEnterFullScreen();
+            } else {
+                onExitFullScreen();
+            }
+           
+         });
+
+
+        video.addEventListener('webkitbeginfullscreen', onEnterFullScreen);
+        video.addEventListener('webkitendfullscreen', onExitFullScreen);
 
         video.addEventListener("loadedmetadata", () => {
-           // console.log("metadatata");
+            video.style.display = "block";
            //enter fullscreen on metadata
             video.webkitEnterFullScreen();
         });

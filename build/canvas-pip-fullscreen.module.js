@@ -697,33 +697,49 @@ class CanvasFullscreen extends EventEmitter$1 {
         video.style.display = "none";
 
         video.addEventListener("pause", () => {
-            this.emit("paused");
+            this.emit("fspause");
             this.isPaused = true;
         });
 
         video.addEventListener("play", () => {
             if (this.isPaused) {
-                this.emit("playing");
+                this.emit("fsplay");
                 this.isPaused = false;
             }
         });
 
-        video.addEventListener('webkitbeginfullscreen', () => {
-            this._video.style.display = "block";
+        const onEnterFullScreen = () => {
+            video.style.display = "block";
             this.emit('webkitbeginfullscreen');
-        });
+        };
 
-        video.addEventListener('webkitendfullscreen', () => {
+        const onExitFullScreen = () => {
             video.style.display = "none";
 
             //stop canvas stream tracks
             video.srcObject.getTracks().forEach(track => track.stop());
 
             this.emit('webkitendfullscreen');
-        });
+        };
+
+
+        document.addEventListener("webkitfullscreenchange", function (event) {
+            //console.log("on webkitfullscreenchange", video.webkitDisplayingFullscreen);
+
+            if (video.webkitDisplayingFullscreen) {
+                onEnterFullScreen();
+            } else {
+                onExitFullScreen();
+            }
+           
+         });
+
+
+        video.addEventListener('webkitbeginfullscreen', onEnterFullScreen);
+        video.addEventListener('webkitendfullscreen', onExitFullScreen);
 
         video.addEventListener("loadedmetadata", () => {
-           // console.log("metadatata");
+            video.style.display = "block";
            //enter fullscreen on metadata
             video.webkitEnterFullScreen();
         });
@@ -795,7 +811,9 @@ class CanvasPipFullscreen extends EventEmitter$1 {
 
         this.canvasFullScreen = new CanvasFullscreen(this.canvas);
         this.canvasFullScreen.on('webkitbeginfullscreen', eventCallback)
-        .on('webkitendfullscreen', eventCallback);
+        .on('webkitendfullscreen', eventCallback)
+        .on('fsplay', eventCallback)
+        .on('fspause', eventCallback);
     }
 
     /**
@@ -896,4 +914,72 @@ class CanvasPipFullscreenUtil {
     }
 }
 
-export { CanvasPipFullscreen, CanvasPipFullscreenUtil };
+const supportsFrameCallback = 'requestVideoFrameCallback' in HTMLVideoElement.prototype,
+requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+                            window.webkitRequestAnimationFrame || window.msRequestAnimationFrame,
+cancelAnimationFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame;
+
+let lastTime;
+
+class VideoAnimation {
+    constructor(callback, video) {
+        this.callback = callback,
+        this.video = video,
+        this.animationID = null,
+        this.running = false;
+    }
+
+    setCallback(callback) {
+        this.callback = callback;
+    }
+
+    async animateLegacy() {
+        const now = this.video.currentTime;
+        if (now > lastTime){
+            (1/(now-lastTime)).toFixed();
+            await this.callback(now, { width: this.video.videoWidth, height: this.video.videoHeight });
+        }
+
+        lastTime = now;
+        this.animationID = requestAnimationFrame(async() => await this.animateLegacy());
+    }
+
+    async animate(now, metadata) {
+        await this.callback(now, metadata);
+        this.video.requestVideoFrameCallback(this.animateRef);
+    }
+
+    initAnimate() {
+        this.animateRef = async(now, metadata) => await this.animate(now, metadata);
+        this.video.requestVideoFrameCallback(this.animateRef);
+    }
+
+    initLegacyAnimate() {
+        this.animateLegacy();
+    }
+
+    start() {
+        this.stop();
+
+        if (supportsFrameCallback) {
+            this.initAnimate();
+        } else {
+            lastTime = new Date();
+            this.initLegacyAnimate();
+        }
+        
+        this.running = true;
+    }
+
+    stop() {
+        this.running = false;
+
+        if (supportsFrameCallback) {
+            this.animateRef = () => {};
+        } else {
+            cancelAnimationFrame(this.animationID && this.animationID.data && this.animationID.data.handleId || this.animationID);
+        }
+    }
+}
+
+export { CanvasPipFullscreen, CanvasPipFullscreenUtil, VideoAnimation };
