@@ -121,8 +121,8 @@
             // container.removeEventListener("click", onClick);
         });
 
-        let pipButton;
-        const canvasPipFullscreen = new CanvasPipFullscreen(canvas, video, true);
+        let pipButton, forceLegacyFs = false;
+        const canvasPipFullscreen = new CanvasPipFullscreen(canvas, video, forceLegacyFs);
         canvasPipFullscreen.on("enterpictureinpicture", (e, isCanvas) => {
             pipButton.innerText = "Exit Pip";
             console.log("isCanvas ", isCanvas);
