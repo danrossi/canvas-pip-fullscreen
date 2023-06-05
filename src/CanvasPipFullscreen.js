@@ -9,12 +9,58 @@ import EventEmitter from 'event-emitter';
 import CanvasPictureInPicture from "./CanvasPictureInPicture";
 import CanvasFullscreen from './CanvasFullscreen';
 
+import CanvasPipFullscreenUtil from './util/CanvasPipFullscreenUtil';
+
 export default class CanvasPipFullscreen extends EventEmitter {
 
-    constructor(canvas, video) {
+    constructor(canvas, video, forceFs = false) {
         super();
         this._canvas = canvas;
         this._video = video;
+        this._requiresDom = false;
+        this._forceFs = forceFs;
+    }
+
+    async init() {
+        return new Promise((accept) => {
+            this.initCanvasVideo();
+            const isIOS = CanvasPipFullscreenUtil.isIOS,
+            _pipSupported = CanvasPipFullscreenUtil.pipSupported;
+
+            if (_pipSupported) {
+                this.initPip();
+            }
+
+            this._requiresDom = isIOS && _pipSupported;
+        
+            //if (isIOS && !CanvasPipFullscreenUtil.fullScreenAvailable) {
+            if (isIOS && (!CanvasPipFullscreenUtil.fullScreenAvailable || this._forceFs)) {
+                this._requiresDom = true;
+                this.initFullscreen();
+            }
+
+            accept(this._requiresDom);
+        });
+        
+    }
+
+    static get pipSupported() {
+        return CanvasPipFullscreenUtil.pipSupported;
+    }
+
+    static get fullScreenAvailable() {
+        return CanvasPipFullscreenUtil.fullScreenAvailable;
+    }
+
+    get requiresDom() {
+        return this._requiresDom;
+    }
+
+    initCanvasVideo() {
+        const canvasVideo = this._canvasVideo = document.createElement("video");
+        canvasVideo.setAttribute("autoplay", true);
+        //canvasVideo.setAttribute("webkit-playsinline","");
+        //canvasVideo.setAttribute("playsinline","");
     }
 
     /**
@@ -23,7 +69,7 @@ export default class CanvasPipFullscreen extends EventEmitter {
      * @param {*} video 
      */
     initPip() {
-        this.canvasPip = new CanvasPictureInPicture(this._canvas, this._video);
+        this.canvasPip = new CanvasPictureInPicture(this._canvas, this._video, this._canvasVideo);
 
         const eventCallback = (e, ...args) => {
             this.emit(e.type, args[0], args[1]);
@@ -42,7 +88,7 @@ export default class CanvasPipFullscreen extends EventEmitter {
             this.emit(e.type, args[0], args[1]);
         };
 
-        this.canvasFullScreen = new CanvasFullscreen(this._canvas);
+        this.canvasFullScreen = new CanvasFullscreen(this._canvas, this._canvasVideo);
         this.canvasFullScreen.on('webkitbeginfullscreen', eventCallback)
         .on('webkitendfullscreen', eventCallback)
         .on('fsplay', eventCallback)
@@ -60,7 +106,7 @@ export default class CanvasPipFullscreen extends EventEmitter {
      * Get the canvas rendering video to add to the dom
      */
     get canvasVideo() {
-        return this.canvasFullScreen && this.canvasFullScreen.video;
+        return this._canvasVideo;
     }
 
     /**

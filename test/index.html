@@ -1,252 +1,228 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
 
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=yes">
-	
-		
-	</head>
-	<body>
-        <style>
-             .vr-fs {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                display: none;
-             }
+<head>
 
-            .container {
-                display: inline-block;
-                vertical-align: top;
-                box-sizing: border-box;
-                color: #fff;
-                background-color: #000;
-                position: relative;
-                padding: 0;
-                font-size: 10px;
-                line-height: 1;
-                font-weight: 400;
-                font-style: normal;
-                font-family: Arial,Helvetica,sans-serif;
-                word-break: initial;
-                width: 100%;
-                max-width: 100%;
-                height: 0;
-                padding-top: 50%;
-            }
+    <meta charset="utf-8">
+    <meta name="viewport"
+        content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=yes">
 
-            .container video {
-                display: none;
-            }
 
-            .container.is-pip canvas {
-                display: none;
-            }
-        </style>
-		<div id="container" class="container" style="max-width: 800px; pointer-events: all;">
-			<video id="video" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;"  loop crossOrigin="anonymous" controls playsinline>
-				<source src="https://videos.electroteque.org/bitrate/big_buck_bunny_2000k.mp4">
-			</video>
-            <canvas id="renderer" style="background: #000000; width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
-            <div id="buttons"></div>
-        </div>
-        
-		<script type="importmap">
+</head>
+
+<body>
+    <style>
+        .vr-fs {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+
+        .container {
+            display: inline-block;
+            vertical-align: top;
+            box-sizing: border-box;
+            color: #fff;
+            background-color: #000;
+            position: relative;
+            padding: 0;
+            font-size: 10px;
+            line-height: 1;
+            font-weight: 400;
+            font-style: normal;
+            font-family: Arial, Helvetica, sans-serif;
+            word-break: initial;
+            width: 100%;
+            max-width: 100%;
+            height: 0;
+            padding-top: 50%;
+        }
+
+        .container #video {
+            display: none;
+        }
+
+        .container .pip-video {
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none; display: none;
+        }
+
+        .container.is-pip canvas {
+            display: none;
+        }
+    </style>
+    <div id="container" class="container" style="max-width: 800px; pointer-events: all;">
+        <video id="video" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;"
+            loop crossOrigin="anonymous" controls playsinline>
+            <source src="https://videos.electroteque.org/bitrate/big_buck_bunny_2000k.mp4">
+        </video>
+        <canvas id="renderer"
+            style="background: #000000; width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
+        <div id="buttons"></div>
+    </div>
+
+    <script type="importmap">
 			{
 				"imports": {
 					"canvas-pip-fullscreen": "../build/canvas-pip-fullscreen.module.js",
                     "fullscreen-api": "../build/fullscreen-api.module.js",
-                    "screenlock-api": "../build/screenlock-api.module.js"
+                    "screenlock-api": "../build/screenlock-api.module.js",
+                    "iosutils": "../build/iosutils.module.js"
 				}
 			}
 		</script>
 
 
-		<script type="module">
+    <script type="module">
 
-            let gl, animation, frameTexLoc, texWidthLoc, texHeightLoc, paused = true;
-
-     
-
-			import {
-				CanvasPipFullscreen,
-                CanvasPipFullscreenUtil,
-                VideoAnimation
-			} from 'canvas-pip-fullscreen';
-
-            import FullscreenApi from 'fullscreen-api';
-            import ScreenLockApi from 'screenlock-api';
-
-            const video = document.getElementById( 'video' ),
-            canvas = document.getElementById( 'renderer' ),
-            container = document.getElementById( 'container' ),
-            buttons = document.getElementById( 'buttons' );
-
-            if (!ScreenLockApi.supportsScreenLock) ScreenLockApi.lockElement(container);
+        let gl, animation, frameTexLoc, texWidthLoc, texHeightLoc, paused = true;
 
 
-            video.addEventListener("loadedmetadata", initCanvas);
-            video.addEventListener("play", () => animation && animation.start());
-            video.addEventListener("pause", () => animation.stop());
-            video.load();
-            
 
-            container.addEventListener("click", (e) => {
+        import {
+            CanvasPipFullscreen,
+            CanvasPipFullscreenUtil,
+            VideoAnimation
+        } from 'canvas-pip-fullscreen';
 
-                if (e.target !== container) return;
-                if (paused) {
-                    
-                    video.play();
-                    paused = false;
-                } else {
-                    paused = true;
-                    video.pause();
-                }
-                
+        import FullscreenApi from 'fullscreen-api';
+        import ScreenLockApi from 'screenlock-api';
 
-    
-               // container.removeEventListener("click", onClick);
-            });
+        const video = document.getElementById('video'),
+            canvas = document.getElementById('renderer'),
+            container = document.getElementById('container'),
+            buttons = document.getElementById('buttons');
 
-        
-            const canvasPipFullscreen = new CanvasPipFullscreen(canvas, video);
+        if (!ScreenLockApi.supportsScreenLock) ScreenLockApi.lockElement(container);
 
-            const fullScreenAvailable = CanvasPipFullscreenUtil.fullScreenAvailable;
-            
 
-            if (CanvasPipFullscreenUtil.pipSupported) {
-                console.log("pip supported");
-                
+        video.addEventListener("loadedmetadata", initCanvas);
+        video.addEventListener("play", () => animation && animation.start());
+        video.addEventListener("pause", () => animation.stop());
+        video.load();
 
-                const pipButton = document.createElement("button");
-                pipButton.innerText = "Enter Pip";
 
-                canvasPipFullscreen.on("enterpictureinpicture", (e, isCanvas) => {
-                    pipButton.innerText = "Exit Pip";
-                    console.log("isCanvas ", isCanvas);
-                    if (isCanvas) container.classList.add("is-pip");
-                }).on("leavepictureinpicture", (e, isCanvas) => {
-                    pipButton.innerText = "Enter Pip";
-                    if (isCanvas) container.classList.remove("is-pip");
-                }).on("failed", (e, isCanvas, error) => {
-                    console.log("Picture in picture error ", error);
-                }).on("disabled", (e, isCanvas, disabled) => {
-                    console.log("PIP Disabled", disabled);
-                    pipButton.disabled = disabled;
-                });
+        container.addEventListener("click", (e) => {
 
-                pipButton.addEventListener("click", () => {
-                    canvasPipFullscreen.togglePictureInPicture(true);
-                });
+            if (e.target !== container) return;
+            if (paused) {
 
-                buttons.appendChild(pipButton);
-
-                canvasPipFullscreen.initPip();
-
+                video.play();
+                paused = false;
+            } else {
+                paused = true;
+                video.pause();
             }
 
-            const fsButton = document.createElement("button");
-            fsButton.innerText = "Enter Fullscreen";
 
-            buttons.appendChild(fsButton);
 
-            
+            // container.removeEventListener("click", onClick);
+        });
 
-          /*  if (fullScreenAvailable) {
-                fsButton.addEventListener("click", () => {
-                    //html fullscreen
-                    FullscreenApi.requestFullscreen(container);
-                });
+        let pipButton;
+        const canvasPipFullscreen = new CanvasPipFullscreen(canvas, video, true);
+        canvasPipFullscreen.on("enterpictureinpicture", (e, isCanvas) => {
+            pipButton.innerText = "Exit Pip";
+            console.log("isCanvas ", isCanvas);
+            if (isCanvas) container.classList.add("is-pip");
+        }).on("leavepictureinpicture", (e, isCanvas) => {
+            pipButton.innerText = "Enter Pip";
+            if (isCanvas) container.classList.remove("is-pip");
+        }).on("failed", (e, isCanvas, error) => {
+            console.log("Picture in picture error ", error);
+        }).on("disabled", (e, isCanvas, disabled) => {
+            console.log("PIP Disabled", disabled);
+            pipButton.disabled = disabled;
+        }).on('webkitbeginfullscreen', () => {
+            console.log("canvas video fullscreen");
+            ScreenLockApi.lock("landscape").then((e) => { console.log("Screen Locked: ", e); }).catch((e) => { console.log("Screen Lock Error: ", e); });
+        }).on('webkitendfullscreen', () => {
+            console.log("canvas video exit fullscreen");
+            ScreenLockApi.unlock();
+        }).on("fsplay", () => {
+            // video.play()
 
-                
-                const onFsChange = () => {
-                    if (FullscreenApi.currentFullScreenElement) {
-                        ScreenLockApi.lock("landscape").then(() => {}).catch(() => {});
-                        fsButton.innerText = "Exit Fullscreen";
-                    } else {
-                        ScreenLockApi.unlock();
-                        fsButton.innerText = "Enter Fullscreen";
-                    }
-                };
+            console.log("PLAY");
+        }).on("fspause", () => { });
 
-                document.addEventListener("fullscreenchange", onFsChange);
-                document.addEventListener("webkitfullscreenchange", onFsChange);
+        
 
-            } else if (!fullScreenAvailable && CanvasPipFullscreenUtil.isIOS) {
-                //init canvas fullscreen manager for iPhone
-                canvasPipFullscreen.initFullscreen();
+       
+        if (CanvasPipFullscreen.pipSupported) {
+            console.log("pip supported");
 
-                canvasPipFullscreen.on('webkitbeginfullscreen', () => {
-                    console.log("canvas video fullscreen");
-                    ScreenLockApi.lock("landscape").then(() => {}).catch(() => {});
-                }).on('webkitendfullscreen', () => {
-                    console.log("canvas video exit fullscreen");
+            pipButton = document.createElement("button");
+            pipButton.innerText = "Enter Pip";
+
+            pipButton.addEventListener("click", () => {
+                canvasPipFullscreen.togglePictureInPicture(true);
+            });
+
+            buttons.appendChild(pipButton);
+        }
+
+        const fsButton = document.createElement("button");
+        fsButton.innerText = "Enter Fullscreen";
+
+        buttons.appendChild(fsButton);
+
+        if (CanvasPipFullscreen.fullScreenAvailable) {
+            fsButton.addEventListener("click", () => {
+                //html fullscreen
+                canvasPipFullscreen.requestFullscreen();
+               // FullscreenApi.requestFullscreen(container);
+            });
+
+
+            const onFsChange = () => {
+                if (FullscreenApi.currentFullScreenElement) {
+                    ScreenLockApi.lock("landscape").then((e) => { console.log("Screen Locked: ", e); }).catch((e) => { console.log("Screen Lock Error: ", e); });
+                    fsButton.innerText = "Exit Fullscreen";
+                } else {
                     ScreenLockApi.unlock();
-                });
+                    fsButton.innerText = "Enter Fullscreen";
+                }
+            };
 
-                fsButton.addEventListener("click", () => {
-                    //canvas video capture fullscreen
-                    canvasPipFullscreen.requestFullscreen();
-                });
-
-                container.insertBefore(canvasPipFullscreen.canvasVideo, container.firstChild);
-            }*/
-
-            canvasPipFullscreen.initFullscreen();
-
-            canvasPipFullscreen.on('webkitbeginfullscreen', () => {
-                console.log("canvas video fullscreen");
-                ScreenLockApi.lock("landscape").then(() => {}).catch(() => {});
-            }).on('webkitendfullscreen', () => {
-                console.log("canvas video exit fullscreen");
-                ScreenLockApi.unlock();
-            }).on("fsplay", () => {
-               // video.play()
-
-                console.log("PLAY");
-            }).on("fspause", () => {}); 
-            
-            //video.pause());
-
+            document.addEventListener("fullscreenchange", onFsChange);
+            //document.addEventListener("webkitfullscreenchange", onFsChange);
+        } else {
             fsButton.addEventListener("click", () => {
                 //canvas video capture fullscreen
                 canvasPipFullscreen.requestFullscreen();
             });
+        }
 
-            canvasPipFullscreen.canvasVideo.classList.add("vr-fs");
-
-            container.insertBefore(canvasPipFullscreen.canvasVideo, container.firstChild);
-
+        canvasPipFullscreen.init().then((requiresDom) => {
+            if (requiresDom) {
            
-               /* container.addEventListener("click", function onClick(e) {
-                    try {
-                    canvasPipFullscreen.canvasVideo.play().catch((e) => { console.log(e)});
-                    canvasPipFullscreen.canvasVideo.pause();
-                    canvasPipFullscreen.canvasVideo.webkitEnterFullScreen();
+                    canvasPipFullscreen.canvasVideo.classList.add("vr-fs");
+                    container.insertBefore(canvasPipFullscreen.canvasVideo, container.firstChild);
+                
+            }
 
-                    container.removeEventListener("click", onClick);
-                    } catch (e) {
-                        console.log(e);
-                    }
-                });*/
+            console.log(canvasPipFullscreen.requiresDom);
 
+        });
 
+        
 
-            function initCanvas() {
-                const config = {
-                    premultipliedAlpha: false
-                };
+       
 
-                gl = canvas.getContext('webgl2', config) || canvas.getContext("webgl", config) || canvas.getContext("experimental-webgl", config);
-            
-                const vs = gl.createShader(gl.VERTEX_SHADER);
-                gl.shaderSource(vs, 'attribute vec2 c; void main(void) { gl_Position=vec4(c, 0.0, 1.0); }');
-                gl.compileShader(vs);
-                const fs = gl.createShader(gl.FRAGMENT_SHADER);
-                gl.shaderSource(fs,  `
+        function initCanvas() {
+            const config = {
+                premultipliedAlpha: false
+            };
+
+            gl = canvas.getContext('webgl2', config) || canvas.getContext("webgl", config) || canvas.getContext("experimental-webgl", config);
+
+            const vs = gl.createShader(gl.VERTEX_SHADER);
+            gl.shaderSource(vs, 'attribute vec2 c; void main(void) { gl_Position=vec4(c, 0.0, 1.0); }');
+            gl.compileShader(vs);
+            const fs = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(fs, `
                 precision mediump float;
 
                 uniform sampler2D frame;
@@ -258,62 +234,63 @@
                     vec2 texCoord = vec2(gl_FragCoord.x/texWidth, 1.0 - (gl_FragCoord.y/texHeight));
                     gl_FragColor = texture2D(frame, texCoord);
                 }`);
-                gl.compileShader(fs);
-                if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
-                    console.error(gl.getShaderInfoLog(fs));
-                }
-                const prog = gl.createProgram();
-                gl.attachShader(prog, vs);
-                gl.attachShader(prog, fs);
-                gl.linkProgram(prog);
-                gl.useProgram(prog);
-                const vb = gl.createBuffer();
-                gl.bindBuffer(gl.ARRAY_BUFFER, vb);
-                gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, 1, -1, -1, 1, -1, 1, 1]), gl.STATIC_DRAW);
-                const coordLoc = gl.getAttribLocation(prog, 'c');
-                gl.vertexAttribPointer(coordLoc, 2, gl.FLOAT, false, 0, 0);
-                gl.enableVertexAttribArray(coordLoc);
-                gl.activeTexture(gl.TEXTURE0);
-                const frame = gl.createTexture();
-                gl.bindTexture(gl.TEXTURE_2D, frame);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-                gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-               
-                frameTexLoc = gl.getUniformLocation(prog, "frame");
-                texWidthLoc = gl.getUniformLocation(prog, "texWidth");
-                texHeightLoc = gl.getUniformLocation(prog, "texHeight");
-
-                animation = new VideoAnimation(async(now, metadata) => await render(now, metadata), video);
-
-                const onResize = () => {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    gl.viewport(0, 0, video.videoWidth, video.videoHeight);
-                    gl.uniform1f(texWidthLoc, video.videoWidth);
-                    gl.uniform1f(texHeightLoc, video.videoHeight);
-                };
-
-                video.addEventListener("resize", onResize);
-                
-                onResize();
-
-                //animation.start();
+            gl.compileShader(fs);
+            if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+                console.error(gl.getShaderInfoLog(fs));
             }
+            const prog = gl.createProgram();
+            gl.attachShader(prog, vs);
+            gl.attachShader(prog, fs);
+            gl.linkProgram(prog);
+            gl.useProgram(prog);
+            const vb = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, 1, -1, -1, 1, -1, 1, 1]), gl.STATIC_DRAW);
+            const coordLoc = gl.getAttribLocation(prog, 'c');
+            gl.vertexAttribPointer(coordLoc, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(coordLoc);
+            gl.activeTexture(gl.TEXTURE0);
+            const frame = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, frame);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 
-            async function render(now, metadata) {
+            frameTexLoc = gl.getUniformLocation(prog, "frame");
+            texWidthLoc = gl.getUniformLocation(prog, "texWidth");
+            texHeightLoc = gl.getUniformLocation(prog, "texHeight");
 
-                gl.viewport(0, 0, metadata.width, metadata.height);
-                gl.activeTexture(gl.TEXTURE0);
-                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
-                gl.uniform1i(frameTexLoc, 0);
-                gl.uniform1f(texWidthLoc, metadata.width);
-                gl.uniform1f(texHeightLoc, metadata.height);
-                gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-            }
-            
+            animation = new VideoAnimation(async (now, metadata) => await render(now, metadata), video);
 
-        </script>
-    
-	</body>
+            const onResize = () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                gl.viewport(0, 0, video.videoWidth, video.videoHeight);
+                gl.uniform1f(texWidthLoc, video.videoWidth);
+                gl.uniform1f(texHeightLoc, video.videoHeight);
+            };
+
+            video.addEventListener("resize", onResize);
+
+            onResize();
+
+            //animation.start();
+        }
+
+        async function render(now, metadata) {
+
+            gl.viewport(0, 0, metadata.width, metadata.height);
+            gl.activeTexture(gl.TEXTURE0);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
+            gl.uniform1i(frameTexLoc, 0);
+            gl.uniform1f(texWidthLoc, metadata.width);
+            gl.uniform1f(texHeightLoc, metadata.height);
+            gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+        }
+
+
+    </script>
+
+</body>
+
 </html>

@@ -579,11 +579,13 @@ class PictureInPictureManager extends EventEmitter {
 
 class CanvasPictureInPicture extends EventEmitter$1 {
 
-    constructor(canvas, video) {
+    constructor(canvas, video, canvasVideo) {
         super();
         
         this._renderingCanvas = canvas;
         this._video = video;
+        this._canvasVideo = canvasVideo;
+        this.pipEnabled = false;
     }
 
     set video(video) {
@@ -596,15 +598,16 @@ class CanvasPictureInPicture extends EventEmitter$1 {
      * @param {*} video 
      */
     init() {
-        const pipVRVideo = this.pipVRVideo = document.createElement("video"),
+        //const pipVRVideo = this.pipVRVideo = document.createElement("video"),
+        const pipVRVideo = this.pipVRVideo = this._canvasVideo,
         vrPipManager = new PictureInPictureManager(pipVRVideo);
-        pipVRVideo.setAttribute("autoplay", true);
-        pipVRVideo.setAttribute("webkit-playsinline","");
-        pipVRVideo.setAttribute("playsinline","");
+        //pipVRVideo.setAttribute("autoplay", true);
+        //pipVRVideo.setAttribute("webkit-playsinline","");
+        //pipVRVideo.setAttribute("playsinline","");
 
         this.onPipMetadata = () => {
             pipVRVideo.removeEventListener("loadedmetadata", this.onPipMetadata);
-            vrPipManager.togglePictureInPicture();
+            if (this.pipEnabled) vrPipManager.togglePictureInPicture();
         };
 
         const eventCallback = (e, ...args) => {
@@ -613,13 +616,16 @@ class CanvasPictureInPicture extends EventEmitter$1 {
     
         vrPipManager.on("enterpictureinpicture", (e) => {
             eventCallback(e, true);
+            //pipVRVideo.style.display = "block";
         }).on("leavepictureinpicture", (e) => {
             eventCallback(e, true);
             pipVRVideo.style.display = "none";
             //stop the canvas stream tracks
             pipVRVideo.srcObject.getTracks().forEach(track => track.stop());
+            this.pipEnabled = false;
         }).on("failed", (e, error) => {
             eventCallback(e, true, error);
+            this.pipEnabled = false;
         });/*.on("disabled", (e, disabled) => {
             eventCallback(e, true, disabled);
         });*/
@@ -647,11 +653,12 @@ class CanvasPictureInPicture extends EventEmitter$1 {
      * Request VR picture in picture
      */
      requestVRPip() {
+        this.pipEnabled = true;
         this.pipVRVideo.style.display = "block";
         this.pipVRVideo.addEventListener("loadedmetadata", this.onPipMetadata);
         //render video from the canvas stream
         this.pipVRVideo.srcObject = this._renderingCanvas.captureStream(30);
-        this.pipVRVideo.play();
+        //this.pipVRVideo.play().catch((e) => { console.log(e);});
     }
 
     /**
@@ -674,21 +681,22 @@ class CanvasPictureInPicture extends EventEmitter$1 {
 
 class CanvasFullscreen extends EventEmitter$1 {
 
-    constructor(canvas) {
+    constructor(canvas, canvasVideo) {
         super();
-        this.init(canvas);
+        this.init(canvas, canvasVideo);
     }
 
     /**
      * Init canvas rendering video for fullscreen support
      * @param {*} canvas 
      */
-    init(canvas) {
+    init(canvas, canvasVideo) {
         
-        const video = this._video = document.createElement("video");
+        //const video = this._video = document.createElement("video");
+        const video = this._video = canvasVideo;
         this._canvas = canvas;
 
-        video.setAttribute("autoplay", true);
+        //video.setAttribute("autoplay", true);
         //video.setAttribute("webkit-playsinline","");
         //video.setAttribute("playsinline","");     
         //video.setAttribute("muted", true);
@@ -716,13 +724,14 @@ class CanvasFullscreen extends EventEmitter$1 {
             video.style.display = "none";
 
             //stop canvas stream tracks
-            video.srcObject.getTracks().forEach(track => track.stop());
+            if (video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
+
+            document.removeEventListener("webkitfullscreenchange", this.onFullscreenChangeRef);
 
             this.emit('webkitendfullscreen');
         };
 
-
-        document.addEventListener("webkitfullscreenchange", function (event) {
+        this.onFullscreenChangeRef = (event) => {
             //console.log("on webkitfullscreenchange", video.webkitDisplayingFullscreen);
 
             if (video.webkitDisplayingFullscreen) {
@@ -731,7 +740,9 @@ class CanvasFullscreen extends EventEmitter$1 {
                 onExitFullScreen();
             }
            
-         });
+        };
+
+        
 
 
         video.addEventListener('webkitbeginfullscreen', onEnterFullScreen);
@@ -751,6 +762,7 @@ class CanvasFullscreen extends EventEmitter$1 {
      * Use requestFullscreen otherwise for html container.
      */
     requestFullscreen() {
+        document.addEventListener("webkitfullscreenchange", this.onFullscreenChangeRef);
         //video.style.display = "block";
         this._video.srcObject = this._canvas.captureStream(30);
 
@@ -767,92 +779,9 @@ class CanvasFullscreen extends EventEmitter$1 {
     /**
      * the current video to add to the dom or add css
      */
-    get video() {
+    /*get video() {
         return this._video;
-    }
-}
-
-/**
- * Canvas Picture in Picture and Fullscreeen API Manager
- * @author Electroteque Media Daniel Rossi <danielr@electroteque.org>
- * Copyright (c) 2023 Electroteque Media
- */
-
-class CanvasPipFullscreen extends EventEmitter$1 {
-
-    constructor(canvas, video) {
-        super();
-        this._canvas = canvas;
-        this._video = video;
-    }
-
-    /**
-     * Init pip and fullscreen support
-     * @param {*} canvas 
-     * @param {*} video 
-     */
-    initPip() {
-        this.canvasPip = new CanvasPictureInPicture(this._canvas, this._video);
-
-        const eventCallback = (e, ...args) => {
-            this.emit(e.type, args[0], args[1]);
-        };
-
-        this.canvasPip.on("enterpictureinpicture", eventCallback)
-        .on("leavepictureinpicture", eventCallback)
-        .on("failed", eventCallback)
-        .on("disabled", eventCallback);
-
-        this.canvasPip.init();
-    }
-
-    initFullscreen() {
-        const eventCallback = (e, ...args) => {
-            this.emit(e.type, args[0], args[1]);
-        };
-
-        this.canvasFullScreen = new CanvasFullscreen(this._canvas);
-        this.canvasFullScreen.on('webkitbeginfullscreen', eventCallback)
-        .on('webkitendfullscreen', eventCallback)
-        .on('fsplay', eventCallback)
-        .on('fspause', eventCallback);
-    }
-
-    /**
-     * Update the video for the pip manager
-     */
-    set video(video) {
-        if (this.canvasPip) this.canvasPip.video = video;
-    }
-
-    /**
-     * Get the canvas rendering video to add to the dom
-     */
-    get canvasVideo() {
-        return this.canvasFullScreen && this.canvasFullScreen.video;
-    }
-
-    /**
-     * Toggle
-     * @param {*} hasVR in a canvas render state or use normal video pip.
-     */
-    togglePictureInPicture(hasVR = true) {
-        this.canvasPip.togglePictureInPicture(hasVR);
-    }
-
-    /**
-     * iPhone request fullscreen for canvas support
-     */
-    requestFullscreen() {
-        this.canvasFullScreen && this.canvasFullScreen.requestFullscreen();
-    }
-
-    /**
-     * Exit iPhone fullscreen
-     */
-    exitFullscreen() {
-        this.canvasFullScreen && this.canvasFullScreen.exitFullscreen();
-    }
+    }*/
 }
 
 /**
@@ -913,6 +842,133 @@ class CanvasPipFullscreenUtil {
 
     static get pipSupported() {
         return PictureInPictureUtil.supported;
+    }
+}
+
+/**
+ * Canvas Picture in Picture and Fullscreeen API Manager
+ * @author Electroteque Media Daniel Rossi <danielr@electroteque.org>
+ * Copyright (c) 2023 Electroteque Media
+ */
+
+class CanvasPipFullscreen extends EventEmitter$1 {
+
+    constructor(canvas, video, forceFs = false) {
+        super();
+        this._canvas = canvas;
+        this._video = video;
+        this._requiresDom = false;
+        this._forceFs = forceFs;
+    }
+
+    async init() {
+        return new Promise((accept) => {
+            this.initCanvasVideo();
+            const isIOS = CanvasPipFullscreenUtil.isIOS,
+            _pipSupported = CanvasPipFullscreenUtil.pipSupported;
+
+            if (_pipSupported) {
+                this.initPip();
+            }
+
+            this._requiresDom = isIOS && _pipSupported;
+        
+            //if (isIOS && !CanvasPipFullscreenUtil.fullScreenAvailable) {
+            if (isIOS && (!CanvasPipFullscreenUtil.fullScreenAvailable || this._forceFs)) {
+                this._requiresDom = true;
+                this.initFullscreen();
+            }
+
+            accept(this._requiresDom);
+        });
+        
+    }
+
+    static get pipSupported() {
+        return CanvasPipFullscreenUtil.pipSupported;
+    }
+
+    static get fullScreenAvailable() {
+        return CanvasPipFullscreenUtil.fullScreenAvailable;
+    }
+
+    get requiresDom() {
+        return this._requiresDom;
+    }
+
+    initCanvasVideo() {
+        const canvasVideo = this._canvasVideo = document.createElement("video");
+        canvasVideo.setAttribute("autoplay", true);
+        //canvasVideo.setAttribute("webkit-playsinline","");
+        //canvasVideo.setAttribute("playsinline","");
+    }
+
+    /**
+     * Init pip and fullscreen support
+     * @param {*} canvas 
+     * @param {*} video 
+     */
+    initPip() {
+        this.canvasPip = new CanvasPictureInPicture(this._canvas, this._video, this._canvasVideo);
+
+        const eventCallback = (e, ...args) => {
+            this.emit(e.type, args[0], args[1]);
+        };
+
+        this.canvasPip.on("enterpictureinpicture", eventCallback)
+        .on("leavepictureinpicture", eventCallback)
+        .on("failed", eventCallback)
+        .on("disabled", eventCallback);
+
+        this.canvasPip.init();
+    }
+
+    initFullscreen() {
+        const eventCallback = (e, ...args) => {
+            this.emit(e.type, args[0], args[1]);
+        };
+
+        this.canvasFullScreen = new CanvasFullscreen(this._canvas, this._canvasVideo);
+        this.canvasFullScreen.on('webkitbeginfullscreen', eventCallback)
+        .on('webkitendfullscreen', eventCallback)
+        .on('fsplay', eventCallback)
+        .on('fspause', eventCallback);
+    }
+
+    /**
+     * Update the video for the pip manager
+     */
+    set video(video) {
+        if (this.canvasPip) this.canvasPip.video = video;
+    }
+
+    /**
+     * Get the canvas rendering video to add to the dom
+     */
+    get canvasVideo() {
+        return this._canvasVideo;
+    }
+
+    /**
+     * Toggle
+     * @param {*} hasVR in a canvas render state or use normal video pip.
+     */
+    togglePictureInPicture(hasVR = true) {
+        this.canvasPip.togglePictureInPicture(hasVR);
+    }
+
+    /**
+     * iPhone request fullscreen for canvas support
+     */
+    requestFullscreen() {
+        this.canvasFullScreen && this.canvasFullScreen.requestFullscreen();
+    }
+
+    /**
+     * Exit iPhone fullscreen
+     */
+    exitFullscreen() {
+        this.canvasFullScreen && this.canvasFullScreen.exitFullscreen();
     }
 }
 

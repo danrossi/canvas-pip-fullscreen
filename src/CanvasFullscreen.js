@@ -8,21 +8,22 @@ import EventEmitter from 'event-emitter';
 
 export default class CanvasFullscreen extends EventEmitter {
 
-    constructor(canvas) {
+    constructor(canvas, canvasVideo) {
         super();
-        this.init(canvas);
+        this.init(canvas, canvasVideo);
     }
 
     /**
      * Init canvas rendering video for fullscreen support
      * @param {*} canvas 
      */
-    init(canvas) {
+    init(canvas, canvasVideo) {
         
-        const video = this._video = document.createElement("video");
+        //const video = this._video = document.createElement("video");
+        const video = this._video = canvasVideo;
         this._canvas = canvas;
 
-        video.setAttribute("autoplay", true);
+        //video.setAttribute("autoplay", true);
         //video.setAttribute("webkit-playsinline","");
         //video.setAttribute("playsinline","");     
         //video.setAttribute("muted", true);
@@ -50,13 +51,14 @@ export default class CanvasFullscreen extends EventEmitter {
             video.style.display = "none";
 
             //stop canvas stream tracks
-            video.srcObject.getTracks().forEach(track => track.stop());
+            if (video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
+
+            document.removeEventListener("webkitfullscreenchange", this.onFullscreenChangeRef);
 
             this.emit('webkitendfullscreen');
         };
 
-
-        document.addEventListener("webkitfullscreenchange", function (event) {
+        this.onFullscreenChangeRef = (event) => {
             //console.log("on webkitfullscreenchange", video.webkitDisplayingFullscreen);
 
             if (video.webkitDisplayingFullscreen) {
@@ -65,7 +67,9 @@ export default class CanvasFullscreen extends EventEmitter {
                 onExitFullScreen();
             }
            
-         });
+        };
+
+        
 
 
         video.addEventListener('webkitbeginfullscreen', onEnterFullScreen);
@@ -85,6 +89,7 @@ export default class CanvasFullscreen extends EventEmitter {
      * Use requestFullscreen otherwise for html container.
      */
     requestFullscreen() {
+        document.addEventListener("webkitfullscreenchange", this.onFullscreenChangeRef);
         //video.style.display = "block";
         this._video.srcObject = this._canvas.captureStream(30);
 
@@ -101,7 +106,7 @@ export default class CanvasFullscreen extends EventEmitter {
     /**
      * the current video to add to the dom or add css
      */
-    get video() {
+    /*get video() {
         return this._video;
-    }
+    }*/
 }

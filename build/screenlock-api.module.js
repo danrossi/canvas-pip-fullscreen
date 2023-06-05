@@ -56,6 +56,7 @@ if (window.screen) {
         || screen.orientation && screen.orientation.unlock && screen.orientation.unlock.bind(screen.orientation)
         || iosScreenUnlock;
 
+    console.log("SCREEN API ", screen.lockOrientationUniversal);
 } else {
     const _listeners = [];
     window.screen = {
