@@ -8,10 +8,11 @@ import { PictureInPictureManager } from 'pip-manager';
 
 export default class CanvasPictureInPicture extends EventEmitter {
 
-    constructor(canvas, renderVideo, video) {
+    constructor(canvas, video) {
         super();
-
-        this.init(canvas, renderVideo, video);
+        
+        this._renderingCanvas = canvas;
+        this._video = video;
     }
 
     set video(video) {
@@ -23,11 +24,8 @@ export default class CanvasPictureInPicture extends EventEmitter {
      * @param {*} canvas 
      * @param {*} video 
      */
-    init(canvas, renderVideo, video) {
-        this.renderingCanvas = canvas;
-
-        //const pipVRVideo = this.pipVRVideo = document.createElement("video"),
-        const pipVRVideo = this.pipVRVideo = renderVideo,
+    init() {
+        const pipVRVideo = this.pipVRVideo = document.createElement("video"),
         vrPipManager = new PictureInPictureManager(pipVRVideo);
         pipVRVideo.setAttribute("autoplay", true);
         pipVRVideo.setAttribute("webkit-playsinline","");
@@ -39,7 +37,7 @@ export default class CanvasPictureInPicture extends EventEmitter {
         };
 
         const eventCallback = (e, ...args) => {
-            this.emit(e.type, args);
+            this.emit(e.type, args[0], args[1]);
         };
     
         vrPipManager.on("enterpictureinpicture", (e) => {
@@ -51,16 +49,16 @@ export default class CanvasPictureInPicture extends EventEmitter {
             pipVRVideo.srcObject.getTracks().forEach(track => track.stop());
         }).on("failed", (e, error) => {
             eventCallback(e, true, error);
-        }).on("disabled", (e, disabled) => {
+        });/*.on("disabled", (e, disabled) => {
             eventCallback(e, true, disabled);
-        });
+        });*/
 
-        if (video) {
-            const pipManager = this.pipManager = new PictureInPictureManager(video);
+        if (this._video) {
+            const pipManager = this.pipManager = new PictureInPictureManager(this._video);
     
-            pipManager.on("enterpictureinpicture", (d) => {
+            pipManager.on("enterpictureinpicture", (e) => {
                 eventCallback(e, false);
-            }).on("leavepictureinpicture", (d) => {
+            }).on("leavepictureinpicture", (e) => {
                 eventCallback(e, false);
             }).on("failed", (e, error) => {
                 eventCallback(e, false, error);
@@ -68,21 +66,20 @@ export default class CanvasPictureInPicture extends EventEmitter {
                 eventCallback(e, false, disabled);
             });
 
-            pipManager.init();
+            pipManager.init(this._video);
         }
             
-        vrPipManager.init();
+        vrPipManager.init(pipVRVideo);
     }
 
      /**
      * Request VR picture in picture
      */
      requestVRPip() {
-        console.log("Request vr pip");
         this.pipVRVideo.style.display = "block";
         this.pipVRVideo.addEventListener("loadedmetadata", this.onPipMetadata);
         //render video from the canvas stream
-        this.pipVRVideo.srcObject = this.renderingCanvas.captureStream(30);
+        this.pipVRVideo.srcObject = this._renderingCanvas.captureStream(30);
         this.pipVRVideo.play();
     }
 

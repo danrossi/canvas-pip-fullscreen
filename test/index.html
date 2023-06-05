@@ -111,6 +111,7 @@
                // container.removeEventListener("click", onClick);
             });
 
+        
             const canvasPipFullscreen = new CanvasPipFullscreen(canvas, video);
 
             const fullScreenAvailable = CanvasPipFullscreenUtil.fullScreenAvailable;
@@ -118,17 +119,18 @@
 
             if (CanvasPipFullscreenUtil.pipSupported) {
                 console.log("pip supported");
-                canvasPipFullscreen.initPip();
+                
 
                 const pipButton = document.createElement("button");
                 pipButton.innerText = "Enter Pip";
 
-                canvasPipFullscreen.on("enterpictureinpicture", () => {
+                canvasPipFullscreen.on("enterpictureinpicture", (e, isCanvas) => {
                     pipButton.innerText = "Exit Pip";
-                    container.classList.add("is-pip");
-                }).on("leavepictureinpicture", () => {
+                    console.log("isCanvas ", isCanvas);
+                    if (isCanvas) container.classList.add("is-pip");
+                }).on("leavepictureinpicture", (e, isCanvas) => {
                     pipButton.innerText = "Enter Pip";
-                    container.classList.remove("is-pip");
+                    if (isCanvas) container.classList.remove("is-pip");
                 }).on("failed", (e, isCanvas, error) => {
                     console.log("Picture in picture error ", error);
                 }).on("disabled", (e, isCanvas, disabled) => {
@@ -141,6 +143,8 @@
                 });
 
                 buttons.appendChild(pipButton);
+
+                canvasPipFullscreen.initPip();
 
             }
 

@@ -8,20 +8,19 @@ import EventEmitter from 'event-emitter';
 
 export default class CanvasFullscreen extends EventEmitter {
 
-    constructor(canvas, renderVideo) {
+    constructor(canvas) {
         super();
-        this.init(canvas, renderVideo);
+        this.init(canvas);
     }
 
     /**
      * Init canvas rendering video for fullscreen support
      * @param {*} canvas 
      */
-    init(canvas, renderVideo) {
+    init(canvas) {
         
-        //const video = this._video = document.createElement("video");
-        const video = this._video = renderVideo;
-        this.canvas = canvas;
+        const video = this._video = document.createElement("video");
+        this._canvas = canvas;
 
         video.setAttribute("autoplay", true);
         //video.setAttribute("webkit-playsinline","");
@@ -87,7 +86,7 @@ export default class CanvasFullscreen extends EventEmitter {
      */
     requestFullscreen() {
         //video.style.display = "block";
-        this._video.srcObject = this.canvas.captureStream(30);
+        this._video.srcObject = this._canvas.captureStream(30);
 
         //this._video.play().catch((e) => { console.log(e);});
     }
