@@ -37,6 +37,7 @@ export default class CanvasPictureInPicture extends EventEmitter {
         this.onPipMetadata = () => {
             pipVRVideo.removeEventListener("loadedmetadata", this.onPipMetadata);
             if (this.pipEnabled) vrPipManager.togglePictureInPicture();
+            this.pipVRVideo.play().catch((e) => { console.log(e);});
         };
 
         const eventCallback = (e, ...args) => {
@@ -87,7 +88,7 @@ export default class CanvasPictureInPicture extends EventEmitter {
         this.pipVRVideo.addEventListener("loadedmetadata", this.onPipMetadata);
         //render video from the canvas stream
         this.pipVRVideo.srcObject = this._renderingCanvas.captureStream(30);
-        //this.pipVRVideo.play().catch((e) => { console.log(e);});
+        this.pipVRVideo.play().catch((e) => { console.log(e);});
     }
 
     /**

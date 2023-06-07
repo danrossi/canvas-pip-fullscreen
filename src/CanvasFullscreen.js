@@ -30,58 +30,76 @@ export default class CanvasFullscreen extends EventEmitter {
 
         video.style.display = "none";
 
-        video.addEventListener("pause", () => {
-            this.emit("fspause");
-            this.isPaused = true;
-        });
+        
+        this.onPauseRef = () => {
+            if (this._legacyFullscreen) {
+                this.emit("fspause");
+                this.isPaused = true;
+            }
+            
+        };
 
-        video.addEventListener("play", () => {
-            if (this.isPaused) {
+        this.onPlayRef = () => {
+            if (this.isPaused && this._legacyFullscreen) {
                 this.emit("fsplay");
                 this.isPaused = false;
             }
-        });
-
-        const onEnterFullScreen = () => {
-            video.style.display = "block";
-            this.emit('webkitbeginfullscreen');
         };
 
-        const onExitFullScreen = () => {
-            video.style.display = "none";
+        this.onEnterFullScreenRef = () => {
+            if (this._legacyFullscreen) {
+                video.style.display = "block";
+                this.emit('webkitbeginfullscreen');
+            }
+            
+        };
 
-            //stop canvas stream tracks
-            if (video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
+        this.onExitFullScreenRef = () => {
+            if (this._legacyFullscreen) {
+                video.style.display = "none";
 
-            document.removeEventListener("webkitfullscreenchange", this.onFullscreenChangeRef);
+                //stop canvas stream tracks
+                if (video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
 
-            this.emit('webkitendfullscreen');
+                document.removeEventListener("webkitfullscreenchange", this.onFullscreenChangeRef);
+
+                video.removeEventListener("play", this.onPlayRef);
+                video.removeEventListener("pause", this.onPauseRef);
+
+                video.removeEventListener('webkitbeginfullscreen', this.onEnterFullScreenRef);
+                video.removeEventListener('webkitendfullscreen', this.onExitFullScreenRef);
+
+
+                this.emit('webkitendfullscreen');
+
+                this._legacyFullscreen = false;
+            }
+            
         };
 
         this.onFullscreenChangeRef = (event) => {
             //console.log("on webkitfullscreenchange", video.webkitDisplayingFullscreen);
 
             if (video.webkitDisplayingFullscreen) {
-                onEnterFullScreen();
+                this.onEnterFullScreenRef();
             } else {
-                onExitFullScreen();
+                this.onExitFullScreenRef();
             }
            
         };
 
-        
 
-
-        video.addEventListener('webkitbeginfullscreen', onEnterFullScreen);
-        video.addEventListener('webkitendfullscreen', onExitFullScreen);
-
-        video.addEventListener("loadedmetadata", () => {
+        this.onLoadedMetadataRef = () => {
             video.style.display = "block";
             video.play().catch((e) => { console.log(e);});
             //enter fullscreen on metadata
             video.webkitEnterFullScreen();
 
-        });
+            video.removeEventListener("loadedmetadata", this.onLoadedMetadataRef);
+
+        };
+
+        
     }
 
     /**
@@ -89,11 +107,19 @@ export default class CanvasFullscreen extends EventEmitter {
      * Use requestFullscreen otherwise for html container.
      */
     requestFullscreen() {
+        this._legacyFullscreen = true;
         document.addEventListener("webkitfullscreenchange", this.onFullscreenChangeRef);
+        this._video.addEventListener("play", this.onPlayRef);
+        this._video.addEventListener("pause", this.onPauseRef);
+        this._video.addEventListener('webkitbeginfullscreen', this.onEnterFullScreenRef);
+        this._video.addEventListener('webkitendfullscreen', this.onExitFullScreenRef);
+        this._video.addEventListener("loadedmetadata", this.onLoadedMetadataRef);
+        
+
         //video.style.display = "block";
         this._video.srcObject = this._canvas.captureStream(30);
 
-        //this._video.play().catch((e) => { console.log(e);});
+        this._video.play().catch((e) => { console.log(e);});
     }
 
     /**
