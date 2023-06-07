@@ -1040,4 +1040,4 @@ class VideoAnimation {
     }
 }
 
-export { CanvasPipFullscreen, CanvasPipFullscreenUtil, VideoAnimation };
+export { CanvasFullscreen, CanvasPictureInPicture, CanvasPipFullscreen, CanvasPipFullscreenUtil, VideoAnimation };
