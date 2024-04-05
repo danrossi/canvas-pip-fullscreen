@@ -28,7 +28,7 @@ export default [
 			resolve(),
 			includePaths({
 				include: {
-				  'iosutils': './node_modules/screenlock-api/build/iosutils.module.js'
+				  //'ios-detection-utils': './node_modules/screenlock-api/build/iosutils.module.js'
 				}
 		  	}),
 			terser()
@@ -48,7 +48,7 @@ export default [
 			resolve(),
 			includePaths({
 				include: {
-				  'iosutils': './node_modules/screenlock-api/build/iosutils.module.js'
+				  //'iosutils': './node_modules/screenlock-api/build/iosutils.module.js'
 				}
 		  	})
 		],

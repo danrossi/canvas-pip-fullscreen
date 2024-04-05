@@ -1,5 +1,5 @@
 import { PictureInPictureUtil } from 'pip-manager';
-import IOSUtils from 'iosutils';
+import IOSUtils from 'ios-detection-utils';
 
 export default class CanvasPipFullscreenUtil {
 

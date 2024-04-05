@@ -13,6 +13,7 @@
     "devDependencies": {
         "@rollup/plugin-terser": "^0.4.1",
         "event-emitter": "github:danrossi/event-emitter",
+        "ios-detection-utils": "github:danrossi/ios-detection-utils",
         "pip-manager": "github:danrossi/pip-manager",
         "rollup": "^2.38.0",
         "rollup-plugin-includepaths": "^0.2.4",
