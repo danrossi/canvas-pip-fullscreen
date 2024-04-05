@@ -21,4 +21,8 @@ export default class CanvasPipFullscreenUtil {
     static get pipSupported() {
         return PictureInPictureUtil.supported;
     }
+
+    static get webkitSupported() {
+        return PictureInPictureUtil.webkitSupport;
+    }
 }

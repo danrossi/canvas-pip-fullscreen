@@ -25,17 +25,22 @@ export default class CanvasPipFullscreen extends EventEmitter {
         return new Promise((accept) => {
             this.initCanvasVideo();
             const isIOS = CanvasPipFullscreenUtil.isIOS,
-            _pipSupported = CanvasPipFullscreenUtil.pipSupported;
+            _pipSupported = CanvasPipFullscreenUtil.pipSupported,
+            _webkitSupported = CanvasPipFullscreenUtil.webkitSupported;
 
             if (_pipSupported) {
                 this.initPip();
             }
 
-            this._requiresDom = isIOS && _pipSupported;
+            //require to add canvas video to dom for any Safari
+            this._requiresDom = _webkitSupported;
         
             //if (isIOS && !CanvasPipFullscreenUtil.fullScreenAvailable) {
             if (isIOS && (!CanvasPipFullscreenUtil.fullScreenAvailable || this._forceFs)) {
                 this._requiresDom = true;
+                this._canvasVideo.setAttribute("webkit-playsinline","");
+                this._canvasVideo.setAttribute("playsinline","");
+                this._canvasVideo.classList.add("ios");
                 this.initFullscreen();
             }
 
@@ -58,7 +63,8 @@ export default class CanvasPipFullscreen extends EventEmitter {
 
     initCanvasVideo() {
         const canvasVideo = this._canvasVideo = document.createElement("video");
-        canvasVideo.setAttribute("autoplay", true);
+        canvasVideo.setAttribute("autoplay", true)
+        canvasVideo.classList.add("vr-fs");
         //canvasVideo.setAttribute("webkit-playsinline","");
         //canvasVideo.setAttribute("playsinline","");
     }
@@ -88,7 +94,7 @@ export default class CanvasPipFullscreen extends EventEmitter {
             this.emit(e.type, args[0], args[1]);
         };
 
-        this.canvasFullScreen = new CanvasFullscreen(this._canvas, this._canvasVideo);
+        this.canvasFullScreen = new CanvasFullscreen(this._canvas, this._canvasVideo, this._video);
         this.canvasFullScreen.on('webkitbeginfullscreen', eventCallback)
         .on('webkitendfullscreen', eventCallback)
         .on('fsplay', eventCallback)

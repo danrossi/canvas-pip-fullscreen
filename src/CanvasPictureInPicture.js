@@ -33,6 +33,7 @@ export default class CanvasPictureInPicture extends EventEmitter {
         //pipVRVideo.setAttribute("autoplay", true);
         //pipVRVideo.setAttribute("webkit-playsinline","");
         //pipVRVideo.setAttribute("playsinline","");
+        
 
         this.onPipMetadata = () => {
             pipVRVideo.removeEventListener("loadedmetadata", this.onPipMetadata);
@@ -48,11 +49,14 @@ export default class CanvasPictureInPicture extends EventEmitter {
             eventCallback(e, true);
             //pipVRVideo.style.display = "block";
         }).on("leavepictureinpicture", (e) => {
-            eventCallback(e, true);
-            pipVRVideo.style.display = "none";
-            //stop the canvas stream tracks
-            pipVRVideo.srcObject.getTracks().forEach(track => track.stop());
-            this.pipEnabled = false;
+            if (this.pipEnabled) {
+                eventCallback(e, true);
+                pipVRVideo.classList.remove("show");
+                //pipVRVideo.style.display = "none";
+                //stop the canvas stream tracks
+                pipVRVideo.srcObject.getTracks().forEach(track => track.stop());
+                this.pipEnabled = false;
+            }
         }).on("failed", (e, error) => {
             eventCallback(e, true, error);
             this.pipEnabled = false;
@@ -64,9 +68,9 @@ export default class CanvasPictureInPicture extends EventEmitter {
             const pipManager = this.pipManager = new PictureInPictureManager(this._video);
     
             pipManager.on("enterpictureinpicture", (e) => {
-                eventCallback(e, false);
+                if (!this.pipEnabled) eventCallback(e, false);
             }).on("leavepictureinpicture", (e) => {
-                eventCallback(e, false);
+                if (!this.pipEnabled) eventCallback(e, false);
             }).on("failed", (e, error) => {
                 eventCallback(e, false, error);
             }).on("disabled", (e, disabled) => {
@@ -84,7 +88,8 @@ export default class CanvasPictureInPicture extends EventEmitter {
      */
      requestVRPip() {
         this.pipEnabled = true;
-        this.pipVRVideo.style.display = "block";
+        //this.pipVRVideo.style.display = "block";
+        this.pipVRVideo.classList.add("show");
         this.pipVRVideo.addEventListener("loadedmetadata", this.onPipMetadata);
         //render video from the canvas stream
         this.pipVRVideo.srcObject = this._renderingCanvas.captureStream(30);

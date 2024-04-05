@@ -28,7 +28,7 @@ export default class CanvasFullscreen extends EventEmitter {
         //video.setAttribute("playsinline","");     
         //video.setAttribute("muted", true);
 
-        video.style.display = "none";
+        //video.style.display = "none";
 
         
         this.onPauseRef = () => {
@@ -48,7 +48,8 @@ export default class CanvasFullscreen extends EventEmitter {
 
         this.onEnterFullScreenRef = () => {
             if (this._legacyFullscreen) {
-                video.style.display = "block";
+                //video.style.display = "block";
+                video.classList.add("show");
                 this.emit('webkitbeginfullscreen');
             }
             
@@ -56,7 +57,8 @@ export default class CanvasFullscreen extends EventEmitter {
 
         this.onExitFullScreenRef = () => {
             if (this._legacyFullscreen) {
-                video.style.display = "none";
+                //video.style.display = "none";
+                video.classList.remove("show");
 
                 //stop canvas stream tracks
                 if (video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
@@ -90,10 +92,15 @@ export default class CanvasFullscreen extends EventEmitter {
 
 
         this.onLoadedMetadataRef = () => {
-            video.style.display = "block";
+            //video.style.display = "block";
+            //video.classList.add("show");
             video.play().catch((e) => { console.log(e);});
             //enter fullscreen on metadata
-            video.webkitEnterFullScreen();
+            //bug in webkit requiring delay when changing visibility css state or it won't show video
+            setTimeout(() => {
+                video.webkitEnterFullScreen();
+            }, 100);
+
 
             video.removeEventListener("loadedmetadata", this.onLoadedMetadataRef);
 
@@ -117,6 +124,8 @@ export default class CanvasFullscreen extends EventEmitter {
         
 
         //video.style.display = "block";
+        this._video.classList.add("show");
+
         this._video.srcObject = this._canvas.captureStream(30);
 
         this._video.play().catch((e) => { console.log(e);});
