@@ -5,7 +5,9 @@
     "main": "build/canvas-pip-fullscreen.min.js",
     "module": "build/canvas-pip-fullscreen.module.js",
     "scripts": {
-        "build": "rollup -c rollup.config.js"
+        "build": "rollup -c rollup.config.js",
+        "css": "stylus < src/style/canvas-pipfullscreen.styl > test/css/canvas-pipfullscreen.css",
+        "css-min": "stylus -C < src/style/canvas-pipfullscreen.styl > test/css/canvas-pipfullscreen.min.css"
     },
     "author": "danielr",
     "devDependencies": {
@@ -16,5 +18,8 @@
         "rollup-plugin-includepaths": "^0.2.4",
         "rollup-plugin-styles": "^4.0.0",
         "screenlock-api": "github:danrossi/screenlock-api"
+    },
+    "dependencies": {
+        "stylus": "^0.63.0"
     }
 }
