@@ -52,6 +52,9 @@ export default [
 				}
 		  	})
 		],
+		external: [
+			'ios-detection-utils'
+		],
 		output: [
 			{
 				format: 'esm',
