@@ -18,7 +18,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            
+
         }
 
         .vr-fs:not(.ios) {
@@ -58,27 +58,34 @@
         }
 
         .container #video {
-           /* display: none;*/
-           visibility: hidden;
+            /* display: none;*/
+            visibility: hidden;
         }
 
         .container .pip-video {
-            width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none; display: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            display: none;
         }
 
         .container.is-pip canvas {
             display: none;
         }
     </style>
-    <div id="container" class="container" style="max-width: 800px; pointer-events: all;">
-        <video id="video" style="width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;"
-            loop crossOrigin="anonymous" controls playsinline>
-            <source src="https://videos.electroteque.org/bitrate/big_buck_bunny_2000k.mp4">
+    <div id="container" class="container" style="max-width: 800px; height: 400px; pointer-events: all;">
+        <video id="video" style="width: 100%; height: 100%; " loop crossOrigin="anonymous" controls playsinline>
+           <!---<source src="https://videos.electroteque.org/bitrate/big_buck_bunny_2000k.mp4">-->
         </video>
         <canvas id="renderer"
             style="background: #000000; width: 100%; height: 100%; position: absolute; top: 0; left: 0; pointer-events: none;"></canvas>
         <div id="buttons"></div>
     </div>
+
+
 
     <script type="importmap">
 			{
@@ -93,6 +100,104 @@
 
 
     <script type="module">
+        class VideoController {
+
+            constructor(canvasVideo, mainVideo) {
+                this.mainVideo = mainVideo;
+
+                VideoPatcher.patchApi(this, canvasVideo);
+            }
+
+
+            get currentTime() {
+                console.log("current time ", this.mainVideo.currentTime);
+                return this.mainVideo.currentTime;
+            }
+
+            set currentTime(value) {
+                this.mainVideo.currentTime = value;
+            }
+
+            get duration() {
+                console.log("duration ", this.mainVideo.duration);
+                return this.mainVideo.duration;
+            }
+
+            get seekable() {
+                console.log("duration ", this.mainVideo.seekable);
+                return this.mainVideo.seekable;
+            }
+
+
+        }
+
+        class VideoPatcher {
+
+            static patchApi(api, video) {
+
+
+                Object.defineProperty(video, 'duration', {
+                    get: () => {
+                        return api.duration;
+                    },
+                    configurable: true,
+                    enumerable: true
+                });
+
+                /*Object.defineProperty(video, 'duration', {
+                    writable: true,
+                    configurable: true,
+                    enumerable: true
+                });*/
+
+
+               /* Object.defineProperty(video, 'currentTime', {
+                    writable: true,
+                    configurable: true,
+                    enumerable: true
+                });*/
+
+                Object.defineProperty(video, 'seekable', {
+                    get: () => {
+                        return api.seekable;
+                    },
+
+                    configurable: true,
+                    enumerable: true
+                });
+
+
+                Object.defineProperty(video, 'currentTime', {
+                    get: () => {
+                        return api.currentTime;
+                    },
+
+                    set: (val) => {
+                        api.currentTime = val;
+                    },
+                    configurable: true,
+                    enumerable: true
+                });
+
+
+                console.log("patch api ", video);
+
+
+
+            }
+
+            static unPatchApi(video) {
+
+
+                let descriptor;
+
+                ['duration', 'currentTime'].forEach((desc) => {
+                    descriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, desc);
+                    Object.defineProperty(video, desc, descriptor);
+                });
+            }
+        }
+
 
         let gl, animation, frameTexLoc, texWidthLoc, texHeightLoc, paused = true;
 
@@ -115,10 +220,37 @@
         if (!ScreenLockApi.supportsScreenLock) ScreenLockApi.lockElement(container);
 
 
+        document.addEventListener("touchmove", function(e){
+
+            alert("TOUCH MOVE");
+        }, false);
+
+        video.src = "https://videos.electroteque.org/bitrate/big_buck_bunny_2000k.mp4";
+
         video.addEventListener("loadedmetadata", initCanvas);
         video.addEventListener("play", () => animation && animation.start());
         video.addEventListener("pause", () => animation.stop());
         video.load();
+
+        //const canvasVideo = video.cloneNode(true);
+        const canvasVideo =  document.createElement("video");
+        canvasVideo.setAttribute("autoplay", true);
+        canvasVideo.setAttribute("webkit-playsinline","");
+        canvasVideo.setAttribute("playsinline","");
+        // canvasVideo.classList.add("vr-fs");
+        canvasVideo.controls = true;
+        //canvasVideo.removeAttribute("style");
+        // canvasVideo.width = 600;
+        //canvasVideo.height = 400;
+        //canvasVideo.src = null;
+
+
+        //  container.appendChild(video);
+
+        new VideoController(canvasVideo, video);
+
+        document.body.appendChild(canvasVideo);
+        //container2.appendChild(canvasVideo);
 
 
         container.addEventListener("click", (e) => {
@@ -134,110 +266,24 @@
             }
 
 
+           
+
 
             // container.removeEventListener("click", onClick);
         });
 
-        let pipButton, forceLegacyFs = true;
-        const canvasPipFullscreen = new CanvasPipFullscreen(canvas, video, forceLegacyFs);
-        canvasPipFullscreen.on("enterpictureinpicture", (e, isCanvas) => {
-            pipButton.innerText = "Exit Pip";
-            console.log("isCanvas ", isCanvas);
-            //if (isCanvas) container.classList.add("is-pip");
-        }).on("leavepictureinpicture", (e, isCanvas) => {
-            pipButton.innerText = "Enter Pip";
-            //if (isCanvas) container.classList.remove("is-pip");
-        }).on("failed", (e, isCanvas, error) => {
-            console.log("Picture in picture error ", error);
-        }).on("disabled", (e, isCanvas, disabled) => {
-            console.log("PIP Disabled", disabled);
-            pipButton.disabled = disabled;
-        }).on('webkitbeginfullscreen', () => {
-            console.log("canvas video fullscreen");
-            ScreenLockApi.lock("landscape").then((e) => { console.log("Screen Locked: ", e); }).catch((e) => { console.log("Screen Lock Error: ", e); });
-        }).on('webkitendfullscreen', () => {
-            console.log("canvas video exit fullscreen");
-            ScreenLockApi.unlock();
-        }).on("fsplay", () => {
-            // video.play()
-
-            console.log("PLAY");
-        }).on("fspause", () => { });
-
-        
-
-       
-        if (CanvasPipFullscreen.pipSupported) {
-            console.log("pip supported");
-
-            pipButton = document.createElement("button");
-            pipButton.innerText = "Enter Pip";
-
-            pipButton.addEventListener("click", async () => {
-                //canvasPipFullscreen.togglePictureInPicture(false);
-                await canvasPipFullscreen.togglePictureInPicture(true);
-            });
-
-            buttons.appendChild(pipButton);
-        }
-
-        const fsButton = document.createElement("button");
-        fsButton.innerText = "Enter Fullscreen";
-
-        buttons.appendChild(fsButton);
-
-        if (CanvasPipFullscreenUtil.fullScreenAvailable) {
-            fsButton.addEventListener("click", () => {
-                //html fullscreen
-                //canvasPipFullscreen.requestFullscreen();
-                FullscreenApi.requestFullscreen(container);
-            });
 
 
-            const onFsChange = () => {
-                if (FullscreenApi.currentFullScreenElement) {
-                    ScreenLockApi.lock("landscape").then((e) => { console.log("Screen Locked: ", e); }).catch((e) => { console.log("Screen Lock Error: ", e); });
-                    fsButton.innerText = "Exit Fullscreen";
-                } else {
-                    ScreenLockApi.unlock();
-                    fsButton.innerText = "Enter Fullscreen";
-                }
-            };
 
-            document.addEventListener("fullscreenchange", onFsChange);
-            //document.addEventListener("webkitfullscreenchange", onFsChange);
-        } else {
-            fsButton.addEventListener("click", () => {
-                //canvas video capture fullscreen
-                canvasPipFullscreen.requestFullscreen();
-            });
-        }
-
-       // fsButton.addEventListener("click", () => {
-                //canvas video capture fullscreen
-              //  canvasPipFullscreen.requestFullscreen();
-           // });
-
-
-        canvasPipFullscreen.init().then((requiresDom) => {
-         
-            if (requiresDom) {
-           
-                    canvasPipFullscreen.canvasVideo.classList.add("vr-fs");
-                    container.appendChild(canvasPipFullscreen.canvasVideo);
-                    //container.insertBefore(canvasPipFullscreen.canvasVideo, container.firstChild);
-                
-            }
-
-            console.log(canvasPipFullscreen.requiresDom);
-
-        });
-
-        
-
-       
 
         function initCanvas() {
+            canvasVideo.srcObject = canvas.captureStream(30);
+           // canvasVideo.duration = video.duration;
+
+            video.currentTime = 100;
+
+          
+
             const config = {
                 premultipliedAlpha: false
             };

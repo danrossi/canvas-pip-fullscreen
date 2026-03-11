@@ -35,9 +35,9 @@ export default class CanvasPictureInPicture extends EventEmitter {
         //pipVRVideo.setAttribute("playsinline","");
         
 
-        this.onPipMetadata = () => {
+        this.onPipMetadata = async () => {
             pipVRVideo.removeEventListener("loadedmetadata", this.onPipMetadata);
-            if (this.pipEnabled) vrPipManager.togglePictureInPicture();
+            if (this.pipEnabled) await vrPipManager.togglePictureInPicture();
             this.pipVRVideo.play().catch((e) => { console.log(e);});
         };
 
@@ -86,24 +86,27 @@ export default class CanvasPictureInPicture extends EventEmitter {
      /**
      * Request VR picture in picture
      */
-     requestVRPip() {
-        this.pipEnabled = true;
-        //this.pipVRVideo.style.display = "block";
-        this.pipVRVideo.classList.add("show");
-        this.pipVRVideo.addEventListener("loadedmetadata", this.onPipMetadata);
-        //render video from the canvas stream
-        this.pipVRVideo.srcObject = this._renderingCanvas.captureStream(30);
-        this.pipVRVideo.play().catch((e) => { console.log(e);});
+     async requestVRPip() {
+        return new Promise((accept) => {
+            this.pipEnabled = true;
+            //this.pipVRVideo.style.display = "block";
+            this.pipVRVideo.classList.add("show");
+            this.pipVRVideo.addEventListener("loadedmetadata", this.onPipMetadata);
+            //render video from the canvas stream
+            this.pipVRVideo.srcObject = this._renderingCanvas.captureStream(30);
+            this.pipVRVideo.play().catch((e) => { console.log(e);});
+            accept();
+        });
     }
 
     /**
      * Toggle canvas or video pip
      * @param {*} hasVR 
      */
-    togglePictureInPicture(hasVR = true) {
+    async togglePictureInPicture(hasVR = true) {
         if (hasVR)
-            this.requestVRPip();
+            await this.requestVRPip();
         else if (this.pipManager)
-            this.pipManager.togglePictureInPicture();
+            await this.pipManager.togglePictureInPicture();
     }
 }

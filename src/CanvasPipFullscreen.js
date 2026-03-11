@@ -34,9 +34,10 @@ export default class CanvasPipFullscreen extends EventEmitter {
 
             //require to add canvas video to dom for any Safari
             this._requiresDom = _webkitSupported;
+
         
             //if (isIOS && !CanvasPipFullscreenUtil.fullScreenAvailable) {
-            if (isIOS && (!CanvasPipFullscreenUtil.fullScreenAvailable || this._forceFs)) {
+            if ((isIOS && !CanvasPipFullscreenUtil.fullScreenAvailable) || this._forceFs) {
                 this._requiresDom = true;
                 this._canvasVideo.setAttribute("webkit-playsinline","");
                 this._canvasVideo.setAttribute("playsinline","");
@@ -65,6 +66,7 @@ export default class CanvasPipFullscreen extends EventEmitter {
         const canvasVideo = this._canvasVideo = document.createElement("video");
         canvasVideo.setAttribute("autoplay", true)
         canvasVideo.classList.add("vr-fs");
+        canvasVideo.controls = true;
         //canvasVideo.setAttribute("webkit-playsinline","");
         //canvasVideo.setAttribute("playsinline","");
     }
@@ -119,8 +121,8 @@ export default class CanvasPipFullscreen extends EventEmitter {
      * Toggle
      * @param {*} hasVR in a canvas render state or use normal video pip.
      */
-    togglePictureInPicture(hasVR = true) {
-        this.canvasPip.togglePictureInPicture(hasVR);
+    async togglePictureInPicture(hasVR = true) {
+        await this.canvasPip.togglePictureInPicture(hasVR);
     }
 
     /**

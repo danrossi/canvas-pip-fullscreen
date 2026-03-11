@@ -5,24 +5,29 @@
  */
 
 import EventEmitter from 'event-emitter';
+import VideoController from './VideoController';
 
 export default class CanvasFullscreen extends EventEmitter {
 
-    constructor(canvas, canvasVideo) {
+    constructor(canvas, canvasVideo, mainVideo) {
         super();
-        this.init(canvas, canvasVideo);
+        this.init(canvas, canvasVideo, mainVideo);
     }
 
     /**
      * Init canvas rendering video for fullscreen support
      * @param {*} canvas 
      */
-    init(canvas, canvasVideo) {
+    init(canvas, canvasVideo, mainVideo) {
         
         //const video = this._video = document.createElement("video");
         const video = this._video = canvasVideo;
         this._canvas = canvas;
 
+    
+
+
+        new VideoController(canvasVideo, mainVideo);
         //video.setAttribute("autoplay", true);
         //video.setAttribute("webkit-playsinline","");
         //video.setAttribute("playsinline","");     
@@ -98,7 +103,7 @@ export default class CanvasFullscreen extends EventEmitter {
             //enter fullscreen on metadata
             //bug in webkit requiring delay when changing visibility css state or it won't show video
             setTimeout(() => {
-                video.webkitEnterFullScreen();
+               // video.webkitEnterFullScreen();
             }, 100);
 
 
@@ -121,8 +126,8 @@ export default class CanvasFullscreen extends EventEmitter {
         this._video.addEventListener('webkitbeginfullscreen', this.onEnterFullScreenRef);
         this._video.addEventListener('webkitendfullscreen', this.onExitFullScreenRef);
         this._video.addEventListener("loadedmetadata", this.onLoadedMetadataRef);
-        
 
+      
         //video.style.display = "block";
         this._video.classList.add("show");
 

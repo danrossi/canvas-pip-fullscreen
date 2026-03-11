@@ -531,16 +531,16 @@ class PictureInPictureManager extends EventEmitter {
 	/**
 	 * Enter/exit Chrome pip 
 	 */
-	toggleChromePip() {
+	async toggleChromePip() {
 		if (!document.pictureInPictureElement) {
-	      this.videoEl.requestPictureInPicture()
+	      await this.videoEl.requestPictureInPicture()
 	      .catch(error => {
 	        // Video failed to enter Picture-in-Picture mode.
 
 			this.emit("failed", error);
 	      });
 	    } else {
-	      document.exitPictureInPicture()
+	      await document.exitPictureInPicture()
 	      .catch(error => {
 	        // Video failed to leave Picture-in-Picture mode.
 			this.emit("failed", error);
@@ -551,24 +551,24 @@ class PictureInPictureManager extends EventEmitter {
 	/**
 	 * Enter/exit Webkit pip
 	 */
-	toggleWebkitPip() {
+	async toggleWebkitPip() {
 		//extra supports check
 		if (!document.pictureInPictureElement && this.videoEl.webkitSupportsPresentationMode("picture-in-picture")) {
-	      this.videoEl.webkitSetPresentationMode("picture-in-picture");
+	      await this.videoEl.webkitSetPresentationMode("picture-in-picture");
 	    } else {
 		  //exit pip for webkit
-	      this.videoEl.webkitSetPresentationMode("inline");
+	      await this.videoEl.webkitSetPresentationMode("inline");
 	    }		
 	}
 
 	/**
 	 * Toggle picture in picture for both apis
 	 */
-	togglePictureInPicture() {
+	async togglePictureInPicture() {
 		if (PictureInPictureUtil.webkitSupport) {
-    		this.toggleWebkitPip();
+    		await this.toggleWebkitPip();
 	    } else {
-	    	this.toggleChromePip();
+	    	await this.toggleChromePip();
 	    }
 	}
 }
@@ -608,10 +608,12 @@ class CanvasPictureInPicture extends EventEmitter$1 {
         //pipVRVideo.setAttribute("playsinline","");
         
 
-        this.onPipMetadata = () => {
+        this.onPipMetadata = async () => {
             pipVRVideo.removeEventListener("loadedmetadata", this.onPipMetadata);
-            if (this.pipEnabled) vrPipManager.togglePictureInPicture();
+            if (this.pipEnabled) await vrPipManager.togglePictureInPicture();
             this.pipVRVideo.play().catch((e) => { console.log(e);});
+
+            console.log("pip enabled");
         };
 
         const eventCallback = (e, ...args) => {
@@ -659,26 +661,98 @@ class CanvasPictureInPicture extends EventEmitter$1 {
      /**
      * Request VR picture in picture
      */
-     requestVRPip() {
-        this.pipEnabled = true;
-        //this.pipVRVideo.style.display = "block";
-        this.pipVRVideo.classList.add("show");
-        this.pipVRVideo.addEventListener("loadedmetadata", this.onPipMetadata);
-        //render video from the canvas stream
-        this.pipVRVideo.srcObject = this._renderingCanvas.captureStream(30);
-        this.pipVRVideo.play().catch((e) => { console.log(e);});
+     async requestVRPip() {
+        return new Promise((accept) => {
+            this.pipEnabled = true;
+            //this.pipVRVideo.style.display = "block";
+            this.pipVRVideo.classList.add("show");
+            this.pipVRVideo.addEventListener("loadedmetadata", this.onPipMetadata);
+            //render video from the canvas stream
+            this.pipVRVideo.srcObject = this._renderingCanvas.captureStream(30);
+            this.pipVRVideo.play().catch((e) => { console.log(e);});
+            accept();
+        });
     }
 
     /**
      * Toggle canvas or video pip
      * @param {*} hasVR 
      */
-    togglePictureInPicture(hasVR = true) {
+    async togglePictureInPicture(hasVR = true) {
         if (hasVR)
-            this.requestVRPip();
+            await this.requestVRPip();
         else if (this.pipManager)
-            this.pipManager.togglePictureInPicture();
+            await this.pipManager.togglePictureInPicture();
     }
+}
+
+class VideoPatcher {
+
+	static patchApi(api, video) {
+      
+
+        Object.defineProperty(video, 'duration', {
+            get: () => {
+                return  api.duration;
+            }
+        });
+
+   
+
+        Object.defineProperty(video, 'currentTime', {
+            get: () => {
+                return  api.currentTime;
+            },
+
+            set: (val) => {
+                api.currentTime = val;
+            },
+            configurable: true,
+            enumerable: true
+        });
+
+
+        console.log("patch api ", video);
+
+
+        
+    }
+
+    static unPatchApi(video) {
+
+
+        let descriptor;
+
+        ['duration', 'currentTime'].forEach((desc) => {
+            descriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, desc);
+            Object.defineProperty(video, desc, descriptor);
+        });
+    }
+}
+
+class VideoController {
+
+    constructor(canvasVideo, mainVideo) {
+        this.mainVideo = mainVideo;
+
+        VideoPatcher.patchApi(this, canvasVideo);
+    }
+    
+
+    get currentTime() {
+        console.log("current time ", this.mainVideo.currentTime);
+        return this.mainVideo.currentTime;
+    }
+
+    set currentTime(value) {
+        this.mainVideo.currentTime = value;
+    }
+
+    get duration() {
+        console.log("duration ", this.mainVideo.duration);
+        return this.mainVideo.duration;
+    }
+    
 }
 
 /**
@@ -689,21 +763,25 @@ class CanvasPictureInPicture extends EventEmitter$1 {
 
 class CanvasFullscreen extends EventEmitter$1 {
 
-    constructor(canvas, canvasVideo) {
+    constructor(canvas, canvasVideo, mainVideo) {
         super();
-        this.init(canvas, canvasVideo);
+        this.init(canvas, canvasVideo, mainVideo);
     }
 
     /**
      * Init canvas rendering video for fullscreen support
      * @param {*} canvas 
      */
-    init(canvas, canvasVideo) {
+    init(canvas, canvasVideo, mainVideo) {
         
         //const video = this._video = document.createElement("video");
         const video = this._video = canvasVideo;
         this._canvas = canvas;
 
+    
+
+
+        new VideoController(canvasVideo, mainVideo);
         //video.setAttribute("autoplay", true);
         //video.setAttribute("webkit-playsinline","");
         //video.setAttribute("playsinline","");     
@@ -779,7 +857,7 @@ class CanvasFullscreen extends EventEmitter$1 {
             //enter fullscreen on metadata
             //bug in webkit requiring delay when changing visibility css state or it won't show video
             setTimeout(() => {
-                video.webkitEnterFullScreen();
+               // video.webkitEnterFullScreen();
             }, 100);
 
 
@@ -802,8 +880,8 @@ class CanvasFullscreen extends EventEmitter$1 {
         this._video.addEventListener('webkitbeginfullscreen', this.onEnterFullScreenRef);
         this._video.addEventListener('webkitendfullscreen', this.onExitFullScreenRef);
         this._video.addEventListener("loadedmetadata", this.onLoadedMetadataRef);
-        
 
+      
         //video.style.display = "block";
         this._video.classList.add("show");
 
@@ -882,9 +960,10 @@ class CanvasPipFullscreen extends EventEmitter$1 {
 
             //require to add canvas video to dom for any Safari
             this._requiresDom = _webkitSupported;
+
         
             //if (isIOS && !CanvasPipFullscreenUtil.fullScreenAvailable) {
-            if (isIOS && (!CanvasPipFullscreenUtil.fullScreenAvailable || this._forceFs)) {
+            if ((isIOS && !CanvasPipFullscreenUtil.fullScreenAvailable) || this._forceFs) {
                 this._requiresDom = true;
                 this._canvasVideo.setAttribute("webkit-playsinline","");
                 this._canvasVideo.setAttribute("playsinline","");
@@ -913,6 +992,7 @@ class CanvasPipFullscreen extends EventEmitter$1 {
         const canvasVideo = this._canvasVideo = document.createElement("video");
         canvasVideo.setAttribute("autoplay", true);
         canvasVideo.classList.add("vr-fs");
+        canvasVideo.controls = true;
         //canvasVideo.setAttribute("webkit-playsinline","");
         //canvasVideo.setAttribute("playsinline","");
     }
@@ -967,8 +1047,8 @@ class CanvasPipFullscreen extends EventEmitter$1 {
      * Toggle
      * @param {*} hasVR in a canvas render state or use normal video pip.
      */
-    togglePictureInPicture(hasVR = true) {
-        this.canvasPip.togglePictureInPicture(hasVR);
+    async togglePictureInPicture(hasVR = true) {
+        await this.canvasPip.togglePictureInPicture(hasVR);
     }
 
     /**
