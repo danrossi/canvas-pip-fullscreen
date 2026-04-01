@@ -1,26 +1,23 @@
 {
-    "name": "canvas-pip-fullscreen",
-    "version": "1.0.0",
-    "description": "Add picture in picture and IPhone native fullscreen to webgl canvas rendering",
-    "main": "build/canvas-pip-fullscreen.min.js",
-    "module": "build/canvas-pip-fullscreen.module.js",
-    "scripts": {
-        "build": "rollup -c rollup.config.js",
-        "css": "stylus < src/style/canvas-pipfullscreen.styl > test/css/canvas-pipfullscreen.css",
-        "css-min": "stylus -C < src/style/canvas-pipfullscreen.styl > test/css/canvas-pipfullscreen.min.css"
-    },
-    "author": "danielr",
-    "devDependencies": {
-        "@rollup/plugin-terser": "^0.4.1",
-        "event-emitter": "github:danrossi/event-emitter",
-        "ios-detection-utils": "github:danrossi/ios-detection-utils",
-        "pip-manager": "github:danrossi/pip-manager",
-        "rollup": "^2.38.0",
-        "rollup-plugin-includepaths": "^0.2.4",
-        "rollup-plugin-styles": "^4.0.0",
-        "screenlock-api": "github:danrossi/screenlock-api"
-    },
-    "dependencies": {
-        "stylus": "^0.63.0"
-    }
+  "name": "canvas-pip-fullscreen",
+  "version": "1.0.0",
+  "description": "Add picture in picture and IPhone native fullscreen to webgl canvas rendering",
+  "main": "build/canvas-pip-fullscreen.min.js",
+  "module": "build/canvas-pip-fullscreen.module.js",
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c rollup.config.js",
+    "css": "stylus < src/style/canvas-pipfullscreen.styl > test/css/canvas-pipfullscreen.css",
+    "css-min": "stylus -C < src/style/canvas-pipfullscreen.styl > test/css/canvas-pipfullscreen.min.css"
+  },
+  "author": "danielr",
+  "devDependencies": {
+    "@rollup/plugin-terser": "^1.0.0",
+    "event-emitter": "github:danrossi/event-emitter",
+    "ios-detection-utils": "github:danrossi/ios-detection-utils",
+    "pip-manager": "github:danrossi/pip-manager",
+    "rollup": "~4.60.1",
+    "screenlock-api": "github:danrossi/screenlock-api",
+    "stylus": "^0.64.0"
+  }
 }

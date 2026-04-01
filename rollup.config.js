@@ -1,6 +1,5 @@
 import terser from '@rollup/plugin-terser';
 import resolve from '@rollup/plugin-node-resolve';
-import includePaths from 'rollup-plugin-includepaths';
 
 const banner = `
 /**
@@ -22,45 +21,28 @@ const banner = `
  */
 `;
 export default [
-	{
-		input: './index.js',
-		plugins: [
-			resolve(),
-			includePaths({
-				include: {
-				  //'ios-detection-utils': './node_modules/screenlock-api/build/iosutils.module.js'
-				}
-		  	}),
-			terser()
-		],
-		output: [
-			{
-				format: 'iife',
-				name: "pip",
-				banner: banner,
-				file: 'build/canvas-pip-fullscreen.min.js'
-			}
-		]
-	},
-	{
-		input: './index.js',
-		plugins: [
-			resolve(),
-			includePaths({
-				include: {
-				  //'iosutils': './node_modules/screenlock-api/build/iosutils.module.js'
-				}
-		  	})
-		],
-		external: [
-			'ios-detection-utils'
-		],
-		output: [
-			{
-				format: 'esm',
-				banner: banner,
-				file: 'build/canvas-pip-fullscreen.module.js'
-			}
-		]
-	}
+  {
+    input: './index.js',
+    plugins: [resolve(), terser()],
+    output: [
+      {
+        format: 'iife',
+        name: 'pip',
+        banner: banner,
+        file: 'build/canvas-pip-fullscreen.min.js',
+      },
+    ],
+  },
+  {
+    input: './index.js',
+    plugins: [resolve()],
+    external: ['ios-detection-utils'],
+    output: [
+      {
+        format: 'esm',
+        banner: banner,
+        file: 'build/canvas-pip-fullscreen.module.js',
+      },
+    ],
+  },
 ];

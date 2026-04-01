@@ -34,7 +34,7 @@ import IOSUtils from 'ios-detection-utils';
 
 const objectToEvents$1 = new WeakMap();
 
-class EventEmitter$1 {
+let EventEmitter$1 = class EventEmitter {
 
     constructor() {
         objectToEvents$1.set(this, {});
@@ -192,7 +192,7 @@ class EventEmitter$1 {
         return Promise.all(promises);
     }
 
-}
+};
 
 /**
  * @license
@@ -612,8 +612,6 @@ class CanvasPictureInPicture extends EventEmitter$1 {
             pipVRVideo.removeEventListener("loadedmetadata", this.onPipMetadata);
             if (this.pipEnabled) await vrPipManager.togglePictureInPicture();
             this.pipVRVideo.play().catch((e) => { console.log(e);});
-
-            console.log("pip enabled");
         };
 
         const eventCallback = (e, ...args) => {
@@ -731,28 +729,25 @@ class VideoPatcher {
 }
 
 class VideoController {
+  constructor(canvasVideo, mainVideo) {
+    this.mainVideo = mainVideo;
 
-    constructor(canvasVideo, mainVideo) {
-        this.mainVideo = mainVideo;
+    VideoPatcher.patchApi(this, canvasVideo);
+  }
 
-        VideoPatcher.patchApi(this, canvasVideo);
-    }
-    
+  get currentTime() {
+    //console.log("current time ", this.mainVideo.currentTime);
+    return this.mainVideo.currentTime;
+  }
 
-    get currentTime() {
-        console.log("current time ", this.mainVideo.currentTime);
-        return this.mainVideo.currentTime;
-    }
+  set currentTime(value) {
+    this.mainVideo.currentTime = value;
+  }
 
-    set currentTime(value) {
-        this.mainVideo.currentTime = value;
-    }
-
-    get duration() {
-        console.log("duration ", this.mainVideo.duration);
-        return this.mainVideo.duration;
-    }
-    
+  get duration() {
+    console.log('duration ', this.mainVideo.duration);
+    return this.mainVideo.duration;
+  }
 }
 
 /**
@@ -760,6 +755,7 @@ class VideoController {
  * @author Electroteque Media Daniel Rossi <danielr@electroteque.org>
  * Copyright (c) 2023 Electroteque Media
  */
+
 
 class CanvasFullscreen extends EventEmitter$1 {
 
@@ -936,6 +932,7 @@ class CanvasPipFullscreenUtil {
  * @author Electroteque Media Daniel Rossi <danielr@electroteque.org>
  * Copyright (c) 2023 Electroteque Media
  */
+
 
 class CanvasPipFullscreen extends EventEmitter$1 {
 
