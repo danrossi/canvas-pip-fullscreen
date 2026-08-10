@@ -4,20 +4,29 @@
   "description": "Add picture in picture and IPhone native fullscreen to webgl canvas rendering",
   "main": "build/canvas-pip-fullscreen.min.js",
   "module": "build/canvas-pip-fullscreen.module.js",
+  "types": "./build/webxr/CanvasPipFullscreen.d.ts",
   "type": "module",
   "scripts": {
-    "build": "rollup -c rollup.config.js",
+    "build": "vite build",
     "css": "stylus < src/style/canvas-pipfullscreen.styl > test/css/canvas-pipfullscreen.css",
     "css-min": "stylus -C < src/style/canvas-pipfullscreen.styl > test/css/canvas-pipfullscreen.min.css"
   },
   "author": "danielr",
+  "overrides": {
+    "@microsoft/api-extractor": {
+      "typescript": "$typescript"
+    }
+  },
   "devDependencies": {
-    "@rollup/plugin-terser": "^1.0.0",
     "event-emitter": "github:danrossi/event-emitter",
     "ios-detection-utils": "github:danrossi/ios-detection-utils",
     "pip-manager": "github:danrossi/pip-manager",
-    "rollup": "~4.60.1",
     "screenlock-api": "github:danrossi/screenlock-api",
-    "stylus": "^0.64.0"
+    "stylus": "^0.64.0",
+    "@microsoft/api-extractor": "^7.58.12",
+    "@typescript/typescript6": "^6.0.2",
+    "three": "^0.185.1",
+    "unplugin-dts": "^1.0.3",
+    "vite": "^8.2.1"
   }
 }
