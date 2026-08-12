@@ -4,7 +4,7 @@
   "description": "Add picture in picture and IPhone native fullscreen to webgl canvas rendering",
   "main": "build/canvas-pip-fullscreen.min.js",
   "module": "build/canvas-pip-fullscreen.module.js",
-  "types": "./build/webxr/CanvasPipFullscreen.d.ts",
+  "types": "./build/CanvasPipFullscreen.d.ts",
   "type": "module",
   "scripts": {
     "build": "vite build",
