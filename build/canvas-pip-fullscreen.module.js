@@ -1,64 +1,6 @@
 import EventEmitter from "event-emitter";
 import IOSUtils from "ios-detection-utils";
 //#region node_modules/pip-manager/build/pip-manager.module.js
-var objectToEvents = new WeakMap();
-var EventEmitter$1 = class {
-	constructor() {
-		objectToEvents.set(this, {});
-	}
-	on(type, callback) {
-		const events = objectToEvents.get(this);
-		if (!events[type]) events[type] = [];
-		events[type].push(callback);
-		return this;
-	}
-	once(type, callback) {
-		const fn = (...args) => {
-			this.off(type, fn);
-			callback(...args);
-		};
-		this.on(type, fn);
-		return this;
-	}
-	off(type, callback) {
-		const events = objectToEvents.get(this)[type];
-		if (events) {
-			if (callback === null) events.length = 0;
-			else events.splice(events.indexOf(callback), 1);
-		}
-		return this;
-	}
-	listeners(type) {
-		try {
-			return objectToEvents.get(this)[type];
-		} catch (error) {
-			return null;
-		}
-	}
-	emit(type, ...args) {
-		const events = objectToEvents.get(this)[type];
-		if (events && events.length) {
-			events.forEach((listener) => {
-				listener({
-					type,
-					target: this
-				}, ...args);
-			});
-			return true;
-		}
-		return this;
-	}
-	emitAsync(type, ...args) {
-		const events = objectToEvents.get(this)[type], promises = [];
-		if (events && events.length) events.forEach((listener) => {
-			promises.push(listener({
-				type,
-				target: this
-			}, ...args));
-		});
-		return Promise.all(promises);
-	}
-};
 var _chromeSupport = false;
 var _webkitSupport = false;
 var PictureInPictureUtil = class {
@@ -75,7 +17,7 @@ var PictureInPictureUtil = class {
 	}
 };
 var _pipWindow;
-var PictureInPictureManager = class extends EventEmitter$1 {
+var PictureInPictureManager = class extends EventEmitter {
 	constructor() {
 		super();
 		this.pictureInPictureElement = false;

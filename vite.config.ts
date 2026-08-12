@@ -11,8 +11,8 @@ export default defineConfig(({ mode }) => {
         outDirs: './build',
 
         //entryRoot: './src',
-        declarationOnly: true,
-        //bundleTypes: true,
+        // declarationOnly: true,
+        //  bundleTypes: true,
         // tsconfigPath: './tsconfig.json',
       }),
     ],
@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
       emptyOutDir: false,
       lib: {
         entry: ['./index.js'],
-        fileName: (format, entryName) => {
+        fileName: (_format, entryName) => {
           return `canvas-pip-fullscreen.module.js`;
         },
         formats: ['es'],

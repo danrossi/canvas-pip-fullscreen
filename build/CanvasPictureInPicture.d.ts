@@ -1,4 +1,5 @@
 import { default as EventEmitter } from 'event-emitter';
+import { PictureInPictureManager } from 'pip-manager';
 export default class CanvasPictureInPicture extends EventEmitter {
     constructor(canvas: any, video: any, canvasVideo: any);
     _renderingCanvas: any;
@@ -14,7 +15,7 @@ export default class CanvasPictureInPicture extends EventEmitter {
     init(): void;
     pipVRVideo: any;
     onPipMetadata: any;
-    pipManager: any;
+    pipManager: PictureInPictureManager | undefined;
     /**
     * Request VR picture in picture
     */

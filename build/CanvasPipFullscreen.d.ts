@@ -2,7 +2,7 @@ import { default as EventEmitter } from 'event-emitter';
 import { default as CanvasPictureInPicture } from './CanvasPictureInPicture';
 import { default as CanvasFullscreen } from './CanvasFullscreen';
 export default class CanvasPipFullscreen extends EventEmitter {
-    static get pipSupported(): any;
+    static get pipSupported(): boolean;
     static get fullScreenAvailable(): any;
     constructor(canvas: any, video: any, forceFs?: boolean);
     _canvas: any;
