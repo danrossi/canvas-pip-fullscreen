@@ -4,9 +4,15 @@ import { default as CanvasFullscreen } from './CanvasFullscreen';
 export default class CanvasPipFullscreen extends EventEmitter {
     static get pipSupported(): boolean;
     static get fullScreenAvailable(): any;
-    constructor(canvas: any, video: any, forceFs?: boolean);
-    _canvas: any;
-    _video: any;
+    /**
+     *
+     * @param {HTMLCanvasElement} canvas - the rendering canvas
+     * @param {HTMLVideoElement} video - the video element
+     * @param {boolean} forceFs - force fullscreen
+     */
+    constructor(canvas: HTMLCanvasElement, video: HTMLVideoElement, forceFs?: boolean);
+    _canvas: HTMLCanvasElement;
+    _video: HTMLVideoElement;
     _requiresDom: boolean;
     _forceFs: boolean;
     init(): Promise<any>;
@@ -15,8 +21,6 @@ export default class CanvasPipFullscreen extends EventEmitter {
     _canvasVideo: HTMLVideoElement | undefined;
     /**
      * Init pip and fullscreen support
-     * @param {*} canvas
-     * @param {*} video
      */
     initPip(): void;
     canvasPip: CanvasPictureInPicture | undefined;
@@ -30,6 +34,12 @@ export default class CanvasPipFullscreen extends EventEmitter {
      * Get the canvas rendering video to add to the dom
      */
     get canvasVideo(): HTMLVideoElement | undefined;
+    /**
+     * Set new rendering canvas
+     *
+     * @param {HTMLCanvasElement} canvas - the rendering canvas
+     */
+    set renderingCanvas(canvas: HTMLCanvasElement);
     /**
      * Toggle
      * @param {*} hasVR in a canvas render state or use normal video pip.

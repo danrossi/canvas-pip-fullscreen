@@ -17,12 +17,18 @@ export default class CanvasPictureInPicture extends EventEmitter {
     onPipMetadata: any;
     pipManager: PictureInPictureManager | undefined;
     /**
-    * Request VR picture in picture
-    */
+     * Request VR picture in picture
+     */
     requestVRPip(): Promise<any>;
     /**
      * Toggle canvas or video pip
      * @param {*} hasVR
      */
     togglePictureInPicture(hasVR?: any): Promise<void>;
+    /**
+     * Set new rendering canvas
+     *
+     * @param {HTMLCanvasElement} canvas - the rendering canvas
+     */
+    set renderingCanvas(canvas: HTMLCanvasElement);
 }

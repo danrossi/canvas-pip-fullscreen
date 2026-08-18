@@ -148,6 +148,9 @@ var CanvasPictureInPicture = class extends EventEmitter {
 		if (hasVR) await this.requestVRPip();
 		else if (this.pipManager) await this.pipManager.togglePictureInPicture();
 	}
+	set renderingCanvas(canvas) {
+		this._renderingCanvas = canvas;
+	}
 };
 //#endregion
 //#region src/util/VideoPatcher.js
@@ -346,6 +349,9 @@ var CanvasPipFullscreen = class extends EventEmitter {
 	}
 	get canvasVideo() {
 		return this._canvasVideo;
+	}
+	set renderingCanvas(canvas) {
+		if (this.canvasFullScreen) this.canvasFullScreen.renderingCanvas = canvas;
 	}
 	async togglePictureInPicture(hasVR = true) {
 		await this.canvasPip.togglePictureInPicture(hasVR);

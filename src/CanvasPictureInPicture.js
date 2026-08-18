@@ -7,106 +7,124 @@ import EventEmitter from 'event-emitter';
 import { PictureInPictureManager } from 'pip-manager';
 
 export default class CanvasPictureInPicture extends EventEmitter {
+  constructor(canvas, video, canvasVideo) {
+    super();
 
-    constructor(canvas, video, canvasVideo) {
-        super();
-        
-        this._renderingCanvas = canvas;
-        this._video = video;
-        this._canvasVideo = canvasVideo;
+    this._renderingCanvas = canvas;
+    this._video = video;
+    this._canvasVideo = canvasVideo;
+    this.pipEnabled = false;
+  }
+
+  set video(video) {
+    if (this.pipManager) this.pipManager.video = video;
+  }
+
+  /**
+   * Init canvas video and normal video pip
+   * @param {*} canvas
+   * @param {*} video
+   */
+  init() {
+    //const pipVRVideo = this.pipVRVideo = document.createElement("video"),
+    const pipVRVideo = (this.pipVRVideo = this._canvasVideo),
+      vrPipManager = new PictureInPictureManager(pipVRVideo);
+    //pipVRVideo.setAttribute("autoplay", true);
+    //pipVRVideo.setAttribute("webkit-playsinline","");
+    //pipVRVideo.setAttribute("playsinline","");
+
+    this.onPipMetadata = async () => {
+      pipVRVideo.removeEventListener('loadedmetadata', this.onPipMetadata);
+      if (this.pipEnabled) await vrPipManager.togglePictureInPicture();
+      this.pipVRVideo.play().catch((e) => {
+        console.log(e);
+      });
+    };
+
+    const eventCallback = (e, ...args) => {
+      this.emit(e.type, args[0], args[1]);
+    };
+
+    vrPipManager
+      .on('enterpictureinpicture', (e) => {
+        eventCallback(e, true);
+        //pipVRVideo.style.display = "block";
+      })
+      .on('leavepictureinpicture', (e) => {
+        if (this.pipEnabled) {
+          eventCallback(e, true);
+          pipVRVideo.classList.remove('show');
+          //pipVRVideo.style.display = "none";
+          //stop the canvas stream tracks
+          pipVRVideo.srcObject.getTracks().forEach((track) => track.stop());
+          this.pipEnabled = false;
+        }
+      })
+      .on('failed', (e, error) => {
+        eventCallback(e, true, error);
         this.pipEnabled = false;
-    }
-
-    set video(video) {
-        if (this.pipManager) this.pipManager.video = video;
-    }
-
-    /**
-     * Init canvas video and normal video pip
-     * @param {*} canvas 
-     * @param {*} video 
-     */
-    init() {
-        //const pipVRVideo = this.pipVRVideo = document.createElement("video"),
-        const pipVRVideo = this.pipVRVideo = this._canvasVideo,
-        vrPipManager = new PictureInPictureManager(pipVRVideo);
-        //pipVRVideo.setAttribute("autoplay", true);
-        //pipVRVideo.setAttribute("webkit-playsinline","");
-        //pipVRVideo.setAttribute("playsinline","");
-        
-
-        this.onPipMetadata = async () => {
-            pipVRVideo.removeEventListener("loadedmetadata", this.onPipMetadata);
-            if (this.pipEnabled) await vrPipManager.togglePictureInPicture();
-            this.pipVRVideo.play().catch((e) => { console.log(e);});
-        };
-
-        const eventCallback = (e, ...args) => {
-            this.emit(e.type, args[0], args[1]);
-        };
-    
-        vrPipManager.on("enterpictureinpicture", (e) => {
-            eventCallback(e, true);
-            //pipVRVideo.style.display = "block";
-        }).on("leavepictureinpicture", (e) => {
-            if (this.pipEnabled) {
-                eventCallback(e, true);
-                pipVRVideo.classList.remove("show");
-                //pipVRVideo.style.display = "none";
-                //stop the canvas stream tracks
-                pipVRVideo.srcObject.getTracks().forEach(track => track.stop());
-                this.pipEnabled = false;
-            }
-        }).on("failed", (e, error) => {
-            eventCallback(e, true, error);
-            this.pipEnabled = false;
-        });/*.on("disabled", (e, disabled) => {
+      }); /*.on("disabled", (e, disabled) => {
             eventCallback(e, true, disabled);
         });*/
 
-        if (this._video) {
-            const pipManager = this.pipManager = new PictureInPictureManager(this._video);
-    
-            pipManager.on("enterpictureinpicture", (e) => {
-                if (!this.pipEnabled) eventCallback(e, false);
-            }).on("leavepictureinpicture", (e) => {
-                if (!this.pipEnabled) eventCallback(e, false);
-            }).on("failed", (e, error) => {
-                eventCallback(e, false, error);
-            }).on("disabled", (e, disabled) => {
-                eventCallback(e, false, disabled);
-            });
+    if (this._video) {
+      const pipManager = (this.pipManager = new PictureInPictureManager(
+        this._video,
+      ));
 
-            pipManager.init(this._video);
-        }
-            
-        vrPipManager.init(pipVRVideo);
-    }
-
-     /**
-     * Request VR picture in picture
-     */
-     async requestVRPip() {
-        return new Promise((accept) => {
-            this.pipEnabled = true;
-            //this.pipVRVideo.style.display = "block";
-            this.pipVRVideo.classList.add("show");
-            this.pipVRVideo.addEventListener("loadedmetadata", this.onPipMetadata);
-            //render video from the canvas stream
-            this.pipVRVideo.srcObject = this._renderingCanvas.captureStream(30);
-            this.pipVRVideo.play().catch((e) => { console.log(e);});
-            accept();
+      pipManager
+        .on('enterpictureinpicture', (e) => {
+          if (!this.pipEnabled) eventCallback(e, false);
+        })
+        .on('leavepictureinpicture', (e) => {
+          if (!this.pipEnabled) eventCallback(e, false);
+        })
+        .on('failed', (e, error) => {
+          eventCallback(e, false, error);
+        })
+        .on('disabled', (e, disabled) => {
+          eventCallback(e, false, disabled);
         });
+
+      pipManager.init(this._video);
     }
 
-    /**
-     * Toggle canvas or video pip
-     * @param {*} hasVR 
-     */
-    async togglePictureInPicture(hasVR = true) {
-        if (hasVR)
-            await this.requestVRPip();
-        else if (this.pipManager)
-            await this.pipManager.togglePictureInPicture();
-    }
+    vrPipManager.init(pipVRVideo);
+  }
+
+  /**
+   * Request VR picture in picture
+   */
+  async requestVRPip() {
+    return new Promise((accept) => {
+      this.pipEnabled = true;
+      //this.pipVRVideo.style.display = "block";
+      this.pipVRVideo.classList.add('show');
+      this.pipVRVideo.addEventListener('loadedmetadata', this.onPipMetadata);
+      //render video from the canvas stream
+      this.pipVRVideo.srcObject = this._renderingCanvas.captureStream(30);
+      this.pipVRVideo.play().catch((e) => {
+        console.log(e);
+      });
+      accept();
+    });
+  }
+
+  /**
+   * Toggle canvas or video pip
+   * @param {*} hasVR
+   */
+  async togglePictureInPicture(hasVR = true) {
+    if (hasVR) await this.requestVRPip();
+    else if (this.pipManager) await this.pipManager.togglePictureInPicture();
+  }
+
+  /**
+   * Set new rendering canvas
+   *
+   * @param {HTMLCanvasElement} canvas - the rendering canvas
+   */
+  set renderingCanvas(canvas) {
+    this._renderingCanvas = canvas;
+  }
 }
