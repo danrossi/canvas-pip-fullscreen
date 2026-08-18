@@ -351,7 +351,7 @@ var CanvasPipFullscreen = class extends EventEmitter {
 		return this._canvasVideo;
 	}
 	set renderingCanvas(canvas) {
-		if (this.canvasFullScreen) this.canvasFullScreen.renderingCanvas = canvas;
+		if (this.canvasPip) this.canvasPip.renderingCanvas = canvas;
 	}
 	async togglePictureInPicture(hasVR = true) {
 		await this.canvasPip.togglePictureInPicture(hasVR);

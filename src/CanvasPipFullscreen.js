@@ -137,7 +137,7 @@ export default class CanvasPipFullscreen extends EventEmitter {
    * @param {HTMLCanvasElement} canvas - the rendering canvas
    */
   set renderingCanvas(canvas) {
-    if (this.canvasFullScreen) this.canvasFullScreen.renderingCanvas = canvas;
+    if (this.canvasPip) this.canvasPip.renderingCanvas = canvas;
   }
 
   /**
