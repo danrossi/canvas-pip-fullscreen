@@ -169,7 +169,6 @@ var VideoPatcher = class {
 			configurable: true,
 			enumerable: true
 		});
-		console.log("patch api ", video);
 	}
 	static unPatchApi(video) {
 		let descriptor;

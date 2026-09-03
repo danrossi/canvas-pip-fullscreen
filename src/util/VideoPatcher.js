@@ -1,43 +1,35 @@
 export default class VideoPatcher {
+  static patchApi(api, video) {
+    Object.defineProperty(video, 'duration', {
+      get: () => {
+        return api.duration;
+      },
+    });
 
-	static patchApi(api, video) {
-      
+    Object.defineProperty(video, 'currentTime', {
+      get: () => {
+        return api.currentTime;
+      },
 
-        Object.defineProperty(video, 'duration', {
-            get: () => {
-                return  api.duration;
-            }
-        });
+      set: (val) => {
+        api.currentTime = val;
+      },
+      configurable: true,
+      enumerable: true,
+    });
 
-   
+    // console.log("patch api ", video);
+  }
 
-        Object.defineProperty(video, 'currentTime', {
-            get: () => {
-                return  api.currentTime;
-            },
+  static unPatchApi(video) {
+    let descriptor;
 
-            set: (val) => {
-                api.currentTime = val;
-            },
-            configurable: true,
-            enumerable: true
-        });
-
-
-        console.log("patch api ", video);
-
-
-        
-    }
-
-    static unPatchApi(video) {
-
-
-        let descriptor;
-
-        ['duration', 'currentTime'].forEach((desc) => {
-            descriptor = Object.getOwnPropertyDescriptor(HTMLMediaElement.prototype, desc);
-            Object.defineProperty(video, desc, descriptor);
-        });
-    }
+    ['duration', 'currentTime'].forEach((desc) => {
+      descriptor = Object.getOwnPropertyDescriptor(
+        HTMLMediaElement.prototype,
+        desc,
+      );
+      Object.defineProperty(video, desc, descriptor);
+    });
+  }
 }
